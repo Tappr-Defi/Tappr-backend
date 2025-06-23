@@ -1,5 +1,6 @@
-package com.semicolon.africa.tapprbackend.kyc.data;
+package com.semicolon.africa.tapprbackend.kyc.data.models;
 
+import com.semicolon.africa.tapprbackend.kyc.enums.DocumentType;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -23,7 +24,7 @@ public class KycDocument {
     private User user;
 
     @Column(nullable = false)
-    private String type; // e.g., BVN, NIN
+    private DocumentType type;
     
     @Column(nullable = false)
     private String documentUrl;

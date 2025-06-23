@@ -45,6 +45,6 @@ public class Transaction {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL)
     private Receipt receipt;
 }

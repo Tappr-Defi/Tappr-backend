@@ -22,6 +22,12 @@ public class Receipt {
     @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 
+    @Column(name = "sender_name")
+    private String senderName;
+
+    @Column(name = "receiver_name")
+    private String receiverName;
+
     @Column(name = "blockchain_hash")
     private String blockchainHash;
     
