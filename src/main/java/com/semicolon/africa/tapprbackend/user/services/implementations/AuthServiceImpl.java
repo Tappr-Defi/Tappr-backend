@@ -43,6 +43,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
+            throw new UserNotFoundException("User with that email doesn't exist");
+        }
+        
         String emailLowerCase = loginRequest.getEmail().toLowerCase().trim();
         User user = checkIfUserExistsInDb(emailLowerCase);
         boolean isValidCredentials = passwordEncoder.matches(loginRequest.getPassword(),
