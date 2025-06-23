@@ -1,5 +1,6 @@
 package com.semicolon.africa.tapprbackend.security;
 
+import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -62,4 +63,5 @@ public class JwtUtil {
                 .getBody()
                 .get("role", String.class);
     }
+
 }

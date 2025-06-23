@@ -1,16 +1,15 @@
 package com.semicolon.africa.tapprbackend.user.data.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.semicolon.africa.tapprbackend.Wallet.data.model.Wallet;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
-import com.semicolon.africa.tapprbackend.kyc.data.KycDocument;
+import com.semicolon.africa.tapprbackend.kyc.data.models.KycDocument;
 import com.semicolon.africa.tapprbackend.notification.data.Notification;
 import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
 import com.semicolon.africa.tapprbackend.Wallet.data.LoyaltyWallet;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -22,6 +21,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@RequiredArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -32,11 +32,20 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "user_name", unique = true)
-    private String userName;
-    
+    @Column(nullable = false, unique = true)
     private String phone;
+
+    @Column(nullable = false)
+    private String firstName;
+
+    @Column(nullable = false)
+    private String lastName;
+
+    @Column(nullable = false)
     private String passwordHash;
+
+    @Column(nullable = false, unique = true)
+    private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
@@ -45,10 +54,13 @@ public class User {
     private boolean isKycVerified = false;
     private boolean isTier2Verified = false;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id")
+    private Wallet wallet;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    // Bidirectional relationships
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<KycDocument> kycDocuments;
 
@@ -64,11 +76,5 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private MerchantProfile merchantProfile;
 
-    public User() {}
 
-    public User(String email, String userName, Role role) {
-        this.email = email;
-        this.userName = userName;
-        this.role = role;
-    }
 }
