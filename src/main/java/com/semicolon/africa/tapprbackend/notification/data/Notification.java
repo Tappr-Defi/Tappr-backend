@@ -29,6 +29,6 @@ public class Notification {
     private boolean read = false;
     
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false)
+    @Column(name = "createdA", nullable = false)
     private LocalDateTime createdAt;
 }
