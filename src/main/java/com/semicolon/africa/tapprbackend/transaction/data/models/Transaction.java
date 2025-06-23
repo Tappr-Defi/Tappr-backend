@@ -4,9 +4,15 @@ import com.semicolon.africa.tapprbackend.reciepts.data.models.Receipt;
 import com.semicolon.africa.tapprbackend.transaction.enums.TransactionStatus;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+
+@Getter
+@Setter
 
 @Entity
 public class Transaction {
