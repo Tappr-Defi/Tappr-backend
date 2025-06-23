@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.vomzersocials.user.enums.Role;
+import com.semicolon.africa.tapprbackend.user.enums.Role;
 
 @Data
 @NoArgsConstructor

@@ -1,5 +1,6 @@
-package com.semicolon.africa.tapprbackend.notification.data;
+package com.semicolon.africa.tapprbackend.kyc.data.models;
 
+import com.semicolon.africa.tapprbackend.kyc.enums.DocumentType;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,8 +13,8 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "notifications")
-public class Notification {
+@Table(name = "kyc_documents")
+public class KycDocument {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -22,13 +23,16 @@ public class Notification {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 500)
-    private String message;
+    @Column(nullable = false)
+    private DocumentType type;
     
-    @Column(name = "is_read", nullable = false)
-    private boolean read = false;
+    @Column(nullable = false)
+    private String documentUrl;
     
+    @Column(nullable = false)
+    private boolean verified = false;
+
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "uploaded_at", nullable = false)
+    private LocalDateTime uploadedAt;
 }
