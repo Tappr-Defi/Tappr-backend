@@ -53,6 +53,7 @@ public class User {
 
     private boolean isKycVerified = false;
     private boolean isTier2Verified = false;
+    private boolean isLoggedIn = false;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id")
