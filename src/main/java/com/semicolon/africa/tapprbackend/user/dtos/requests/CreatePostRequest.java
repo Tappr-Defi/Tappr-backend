@@ -2,7 +2,7 @@ package com.semicolon.africa.tapprbackend.user.dtos.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.vomzersocials.user.data.models.User;
+import com.semicolon.africa.tapprbackend.user.data.models.User;
 
 import java.util.List;
 import java.util.UUID;
