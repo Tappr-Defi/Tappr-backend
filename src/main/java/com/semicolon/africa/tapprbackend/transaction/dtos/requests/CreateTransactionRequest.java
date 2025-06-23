@@ -1,0 +1,21 @@
+package com.semicolon.africa.tapprbackend.transaction.dtos.requests;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Setter
+@Getter
+public class CreateTransactionRequest {
+
+    private Long merchantId;
+
+    private BigDecimal amount;
+
+    private String currency = "NGN";
+
+    // Optional: could be set to PENDING by default in the service layer
+    private String status;
+}
+
