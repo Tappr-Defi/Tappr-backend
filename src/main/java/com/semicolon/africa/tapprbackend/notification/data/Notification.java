@@ -19,16 +19,16 @@ public class Notification {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "userId", nullable = false)
     private User user;
 
     @Column(nullable = false, length = 500)
     private String message;
     
-    @Column(name = "is_read", nullable = false)
+    @Column(name = "isRead", nullable = false)
     private boolean read = false;
     
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "createdAt", nullable = false)
     private LocalDateTime createdAt;
 }
