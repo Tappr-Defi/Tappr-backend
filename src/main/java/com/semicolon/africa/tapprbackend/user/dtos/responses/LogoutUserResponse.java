@@ -10,7 +10,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LogoutUserResponse {
-    private String userName;
     private String message;
-
+    private boolean isLoggedIn;
 }
