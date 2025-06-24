@@ -1,4 +1,4 @@
-package com.semicolon.africa.tapprbackend.Wallet.data;
+package com.semicolon.africa.tapprbackend.Wallet.data.model;
 
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
