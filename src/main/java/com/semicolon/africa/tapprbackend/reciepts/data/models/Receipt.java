@@ -41,4 +41,8 @@ public class Receipt {
     public String getDownloadUrl() {
         return "";
     }
+
+    public void setDownloadUrl(String url) {
+
+    }
 }

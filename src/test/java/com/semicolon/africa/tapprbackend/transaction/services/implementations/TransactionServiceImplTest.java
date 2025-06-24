@@ -1,0 +1,193 @@
+package com.semicolon.africa.tapprbackend.transaction.services.implementations;
+
+import com.semicolon.africa.tapprbackend.reciepts.data.models.Receipt;
+import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
+import com.semicolon.africa.tapprbackend.transaction.data.repositories.TransactionRepository;
+import com.semicolon.africa.tapprbackend.transaction.dtos.requests.CreateTransactionRequest;
+import com.semicolon.africa.tapprbackend.transaction.dtos.responses.CreateTransactionResponse;
+import com.semicolon.africa.tapprbackend.transaction.enums.CurrencyType;
+import com.semicolon.africa.tapprbackend.transaction.enums.TransactionStatus;
+import com.semicolon.africa.tapprbackend.transaction.exceptions.MerchantNotFoundException;
+import com.semicolon.africa.tapprbackend.transaction.services.interfaces.TransactionService;
+import com.semicolon.africa.tapprbackend.user.data.models.User;
+import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@SpringBootTest
+public class TransactionServiceImplTest {
+
+    @Autowired
+    private TransactionService transactionService;
+
+    @MockBean
+    private TransactionRepository transactionRepository;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    private CreateTransactionRequest createTransactionRequest;
+    private User merchant;
+    private Transaction transaction;
+
+    @BeforeEach
+    public void setUp() {
+        merchant = new User();
+        merchant.setId(UUID.randomUUID());
+        merchant.setFirstName("John");
+        merchant.setLastName("Doe");
+        merchant.setEmail("john.doe@example.com");
+        merchant.setPhoneNumber("+2348123456789");
+
+        createTransactionRequest = new CreateTransactionRequest();
+        createTransactionRequest.setMerchantId(1L);
+        createTransactionRequest.setAmount(BigDecimal.valueOf(1000));
+        createTransactionRequest.setCurrency("NGN");
+        createTransactionRequest.setStatus("PENDING");
+
+        transaction = new Transaction();
+        transaction.setId(UUID.randomUUID());
+        transaction.setTransactionRef(UUID.randomUUID().toString());
+        transaction.setMerchant(merchant);
+        transaction.setAmount(BigDecimal.valueOf(1000));
+        transaction.setCurrency(CurrencyType.NGN);
+        transaction.setStatus(TransactionStatus.PENDING);
+        transaction.setInitiatedAt(LocalDateTime.now());
+
+        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(merchant));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
+
+    }
+
+    @Test
+    public void testCreateTransaction_successfullyCreatesTransaction() {
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+
+        assertNotNull(response);
+        assertEquals(transaction.getId(), response.getTransactionId());
+        assertEquals(transaction.getTransactionRef(), response.getTransactionRef());
+        assertEquals(merchant.getFullName(), response.getMerchantName());
+        assertEquals(transaction.getAmount(), response.getAmount());
+        assertEquals(transaction.getCurrency().name(), response.getCurrency());
+        assertEquals(transaction.getStatus(), response.getStatus());
+        assertNotNull(response.getInitiatedAt());
+
+        verify(userRepository, times(1)).findById(createTransactionRequest.getMerchantId());
+        verify(transactionRepository, times(1)).save(any(Transaction.class));
+
+        ArgumentCaptor<Transaction> transactionCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(transactionCaptor.capture());
+        Transaction savedTransaction = transactionCaptor.getValue();
+
+        assertEquals(merchant, savedTransaction.getMerchant());
+        assertEquals(createTransactionRequest.getAmount(), savedTransaction.getAmount());
+        assertEquals(CurrencyType.valueOf(createTransactionRequest.getCurrency()), savedTransaction.getCurrency());
+        assertEquals(TransactionStatus.valueOf(createTransactionRequest.getStatus().toUpperCase()), savedTransaction.getStatus());
+        assertNotNull(savedTransaction.getTransactionRef());
+        assertNotNull(savedTransaction.getInitiatedAt());
+    }
+
+    @Test
+    public void testCreateTransaction_withReceipt_returnsReceiptUrl() {
+        Receipt receipt = new Receipt();
+        receipt.setDownloadUrl("https://example.com/receipt.pdf");
+        transaction.setReceipt(receipt);
+
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
+
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+
+        assertNotNull(response);
+        assertEquals(receipt.getDownloadUrl(), response.getReceiptUrl());
+    }
+
+    @Test
+    public void testCreateTransaction_merchantNotFound_throwsException() {
+        when(userRepository.findById(any(Long.class))).thenReturn(Optional.empty());
+
+        MerchantNotFoundException exception = assertThrows(MerchantNotFoundException.class, () -> {
+            transactionService.createTransaction(createTransactionRequest);
+        });
+
+        assertEquals("Merchant not found", exception.getMessage());
+    }
+
+    @Test
+    public void testCreateTransaction_whenStatusIsNull_shouldDefaultToPending() {
+        createTransactionRequest.setStatus(null);
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        assertEquals(TransactionStatus.PENDING, response.getStatus());
+    }
+
+    @Test
+    public void testCreateTransaction_whenInvalidCurrency_shouldThrowException() {
+        createTransactionRequest.setCurrency("INVALID_CURRENCY");
+        assertThrows(IllegalArgumentException.class, () -> {
+            transactionService.createTransaction(createTransactionRequest);
+        });
+    }
+
+    @Test
+    public void testCreateTransaction_whenInvalidStatus_shouldThrowException() {
+        createTransactionRequest.setStatus("UNKNOWN_STATUS");
+        assertThrows(IllegalArgumentException.class, () -> {
+            transactionService.createTransaction(createTransactionRequest);
+        });
+    }
+
+    @Test
+    public void testCreateTransaction_completedAtShouldBeNullByDefault() {
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        assertNull(response.getCompletedAt());
+    }
+
+    @Test
+    public void testCreateTransaction_transactionRefIsUuidFormat() {
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        assertDoesNotThrow(() -> UUID.fromString(response.getTransactionRef()));
+    }
+
+    @Test
+    public void testCreateTransaction_withZeroAmount_shouldAllowOrReject() {
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        createTransactionRequest.setAmount(BigDecimal.ZERO);
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        assertEquals(BigDecimal.ZERO, response.getAmount());
+    }
+
+    @Test
+    public void testCreateTransaction_initiatedAtShouldBeRecent() {
+        LocalDateTime before = LocalDateTime.now().minusSeconds(1);
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        LocalDateTime after = LocalDateTime.now().plusSeconds(1);
+
+        assertTrue(response.getInitiatedAt().isAfter(before));
+        assertTrue(response.getInitiatedAt().isBefore(after));
+    }
+
+    @Test
+    public void testCreateTransaction_shouldUseCorrectMerchantId() {
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+        ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository).save(captor.capture());
+
+        Transaction savedTransaction = captor.getValue();
+        assertEquals(merchant.getId(), savedTransaction.getMerchant().getId());
+    }
+}

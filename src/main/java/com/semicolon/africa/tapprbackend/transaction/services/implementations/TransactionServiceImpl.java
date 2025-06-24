@@ -6,6 +6,7 @@ import com.semicolon.africa.tapprbackend.transaction.dtos.requests.CreateTransac
 import com.semicolon.africa.tapprbackend.transaction.dtos.responses.CreateTransactionResponse;
 import com.semicolon.africa.tapprbackend.transaction.enums.CurrencyType;
 import com.semicolon.africa.tapprbackend.transaction.enums.TransactionStatus;
+import com.semicolon.africa.tapprbackend.transaction.exceptions.MerchantNotFoundException;
 import com.semicolon.africa.tapprbackend.transaction.services.interfaces.TransactionService;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
@@ -24,8 +25,10 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
-        User merchant = userRepository.findById(UUID.fromString(request.getMerchantId()))
-                .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
+      
+        User merchant = userRepository.findById(request.getMerchantId())
+                .orElseThrow(() -> new MerchantNotFoundException("Merchant not found"));
+
 
         Transaction transaction = new Transaction();
         transaction.setTransactionRef(UUID.randomUUID().toString());
