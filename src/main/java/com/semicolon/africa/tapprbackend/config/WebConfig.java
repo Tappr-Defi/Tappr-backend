@@ -16,10 +16,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOriginPatterns("*")
+                .allowedOrigins("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true)
+                .allowCredentials(false)
                 .maxAge(3600);
     }
 
@@ -28,7 +28,7 @@ public class WebConfig implements WebMvcConfigurer {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Allow all origins for development - in production, specify your frontend URL
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOrigins(Arrays.asList("*"));
         
         // Allow common HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -36,8 +36,8 @@ public class WebConfig implements WebMvcConfigurer {
         // Allow all headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
-        // Allow credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(true);
+        // Disable credentials for wildcard origins
+        configuration.setAllowCredentials(false);
         
         // Cache preflight response for 1 hour
         configuration.setMaxAge(3600L);

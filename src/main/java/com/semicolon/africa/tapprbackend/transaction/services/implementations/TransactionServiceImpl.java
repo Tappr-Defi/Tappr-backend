@@ -25,7 +25,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
         // Find the user (merchant) by ID
-        User merchant = userRepository.findById(request.getMerchantId())
+        User merchant = userRepository.findById(UUID.fromString(request.getMerchantId()))
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
 
         // Create and populate the transaction
