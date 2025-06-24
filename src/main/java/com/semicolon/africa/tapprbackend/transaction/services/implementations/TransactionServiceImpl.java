@@ -4,6 +4,7 @@ import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
 import com.semicolon.africa.tapprbackend.transaction.data.repositories.TransactionRepository;
 import com.semicolon.africa.tapprbackend.transaction.dtos.requests.CreateTransactionRequest;
 import com.semicolon.africa.tapprbackend.transaction.dtos.responses.CreateTransactionResponse;
+import com.semicolon.africa.tapprbackend.transaction.enums.CurrencyType;
 import com.semicolon.africa.tapprbackend.transaction.enums.TransactionStatus;
 import com.semicolon.africa.tapprbackend.transaction.services.interfaces.TransactionService;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
@@ -32,7 +33,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setTransactionRef(UUID.randomUUID().toString());
         transaction.setMerchant(merchant);
         transaction.setAmount(request.getAmount());
-        transaction.setCurrency(request.getCurrency());
+        transaction.setCurrency(CurrencyType.valueOf(request.getCurrency()));
         transaction.setStatus(
                 request.getStatus() != null
                         ? TransactionStatus.valueOf(request.getStatus().toUpperCase())
@@ -54,7 +55,7 @@ public class TransactionServiceImpl implements TransactionService {
         response.setTransactionRef(transaction.getTransactionRef());
         response.setMerchantName(transaction.getMerchant().getFullName()); // or getUserName()
         response.setAmount(transaction.getAmount());
-        response.setCurrency(transaction.getCurrency());
+        response.setCurrency(String.valueOf(transaction.getCurrency()).toUpperCase());
         response.setStatus(transaction.getStatus());
         response.setInitiatedAt(transaction.getInitiatedAt());
         response.setCompletedAt(transaction.getCompletedAt());

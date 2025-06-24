@@ -1,8 +1,7 @@
 package com.semicolon.africa.tapprbackend.security;
 
-import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,15 +9,14 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import io.jsonwebtoken.Jwts;
-import java.security.Key;
+import javax.crypto.SecretKey;
 
 
 
 @Component
 public class JwtUtil {
 
-    private final Key secretKey;
+    private final SecretKey secretKey;
 
     public JwtUtil(@Value("${jwt.secret}")String secret) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -38,12 +36,8 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token) {
-        try {
-            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
-            return true;
-        } catch (JwtException e) {
-            return false;
-        }
+        Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+        return true;
     }
 
     public String extractEmail(String token) {

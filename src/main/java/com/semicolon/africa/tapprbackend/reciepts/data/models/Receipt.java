@@ -37,4 +37,8 @@ public class Receipt {
     @CreationTimestamp
     @Column(name = "issued_at", nullable = false)
     private LocalDateTime issuedAt;
+
+    public String getDownloadUrl() {
+        return "";
+    }
 }
