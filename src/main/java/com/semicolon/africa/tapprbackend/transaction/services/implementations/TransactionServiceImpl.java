@@ -25,11 +25,11 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
-        // Find the user (merchant) by ID
+      
         User merchant = userRepository.findById(request.getMerchantId())
                 .orElseThrow(() -> new MerchantNotFoundException("Merchant not found"));
 
-        // Create and populate the transaction
+
         Transaction transaction = new Transaction();
         transaction.setTransactionRef(UUID.randomUUID().toString());
         transaction.setMerchant(merchant);
@@ -42,10 +42,8 @@ public class TransactionServiceImpl implements TransactionService {
         );
         transaction.setInitiatedAt(LocalDateTime.now());
 
-        // Save to DB
         Transaction savedTransaction = transactionRepository.save(transaction);
 
-        // Map and return response
         return mapToResponse(savedTransaction);
     }
 
@@ -54,7 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
         CreateTransactionResponse response = new CreateTransactionResponse();
         response.setTransactionId(transaction.getId());
         response.setTransactionRef(transaction.getTransactionRef());
-        response.setMerchantName(transaction.getMerchant().getFullName()); // or getUserName()
+        response.setMerchantName(transaction.getMerchant().getFullName());
         response.setAmount(transaction.getAmount());
         response.setCurrency(String.valueOf(transaction.getCurrency()).toUpperCase());
         response.setStatus(transaction.getStatus());
@@ -62,7 +60,7 @@ public class TransactionServiceImpl implements TransactionService {
         response.setCompletedAt(transaction.getCompletedAt());
 
         if (transaction.getReceipt() != null) {
-            response.setReceiptUrl(transaction.getReceipt().getDownloadUrl()); // assuming Receipt has this
+            response.setReceiptUrl(transaction.getReceipt().getDownloadUrl());
         }
 
         return response;

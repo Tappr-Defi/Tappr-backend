@@ -31,9 +31,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
-    private String phone;
-
     @Column(nullable = false)
     private String firstName;
 
@@ -54,8 +51,8 @@ public class User {
     private boolean isTier2Verified = false;
     private boolean isLoggedIn = false;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "wallet_id")
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "wallet_id", referencedColumnName = "id", nullable = true)
     private Wallet wallet;
 
     @CreationTimestamp

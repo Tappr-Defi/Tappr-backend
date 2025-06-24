@@ -12,7 +12,7 @@ import lombok.Setter;
 @Getter
 public class CreateTransactionRequest {
 
-    private Long merchantId;
+    private String merchantId;
 
     private BigDecimal amount;
 

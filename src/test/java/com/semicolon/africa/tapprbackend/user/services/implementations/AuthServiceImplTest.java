@@ -86,11 +86,17 @@ public class AuthServiceImplTest {
     }
 
     @Test
-    public void testJwtTokenIsGenerated() {
-        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+    public void testJwtTokenIsGeneratedOnLogin() {
+        authenticationService.createNewUser(createNewUserRequest);
         
-        assertNotNull(response.getAccessToken());
-        assertFalse(response.getAccessToken().isEmpty());
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail(createNewUserRequest.getEmail());
+        loginRequest.setPassword(createNewUserRequest.getPassword());
+        
+        LoginResponse loginResponse = authenticationService.login(loginRequest);
+        
+        assertNotNull(loginResponse.getAccessToken());
+        assertFalse(loginResponse.getAccessToken().isEmpty());
     }
 
     @Test
@@ -211,21 +217,19 @@ public class AuthServiceImplTest {
     }
 
     @Test
-    public void testSignUpFailsWithWhitespaceInFirstName() {
+    public void testSignUpPassesWithWhitespaceInFirstName() {
         createNewUserRequest.setFirstName("John Daniel");
-        
-        assertThrows(IllegalArgumentException.class, () -> {
-            authenticationService.createNewUser(createNewUserRequest);
-        });
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        assertEquals("User created successfully", response.getMessage());
     }
 
     @Test
-    public void testSignUpFailsWithWhitespaceInLastName() {
+    public void testSignUpPassesWithWhitespaceInLastName() {
         createNewUserRequest.setLastName("Van Halen");
-        
-        assertThrows(IllegalArgumentException.class, () -> {
-            authenticationService.createNewUser(createNewUserRequest);
-        });
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        assertEquals("User created successfully", response.getMessage());
     }
 
     @Test
@@ -337,9 +341,9 @@ public class AuthServiceImplTest {
         
         assertNotNull(response);
         assertEquals("User created successfully", response.getMessage());
-        assertNotNull(response.getAccessToken());
-        assertFalse(response.getAccessToken().isEmpty());
         assertNotNull(response.getUserId());
+        assertNotNull(response.getEmail());
+        assertNotNull(response.getPhoneNumber());
     }
     @Test
     public void testLoginFailsWithNonExistentEmail() {
@@ -378,14 +382,13 @@ public class AuthServiceImplTest {
     }
 
     @Test
-    public void testJwtTokensAreConsistentBetweenSignupAndLogin() {
+    public void testUserIdIsConsistentBetweenSignupAndLogin() {
         CreateNewUserResponse signupResponse = authenticationService.createNewUser(createNewUserRequest);
         
         LoginResponse loginResponse = authenticationService.login(loginRequest);
 
-        assertNotNull(signupResponse.getAccessToken());
+        assertNotNull(signupResponse.getUserId());
         assertNotNull(loginResponse.getAccessToken());
-        assertFalse(signupResponse.getAccessToken().isEmpty());
         assertFalse(loginResponse.getAccessToken().isEmpty());
         
         assertEquals(signupResponse.getUserId(), loginResponse.getUserId());
@@ -464,7 +467,7 @@ public class AuthServiceImplTest {
         createNewUserRequestWithSameEmail.setPassword("password");
         createNewUserRequestWithSameEmail.setPhoneNumber("+2348123456789");
 
-        assertEquals("User already exists",
+        assertEquals("User with this email already exists",
                 assertThrows(IllegalArgumentException.class,
                         () -> authenticationService.createNewUser(createNewUserRequestWithSameEmail)).getMessage());
     }
@@ -474,7 +477,7 @@ public class AuthServiceImplTest {
         UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
             authenticationService.login(new LoginRequest());
         });
-        assertEquals("User with that email doesn't exist", exception.getMessage());
+        assertEquals("Email is required", exception.getMessage());
     }
 
     @Test

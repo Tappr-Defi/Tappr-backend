@@ -1,22 +1,34 @@
 package com.semicolon.africa.tapprbackend.user.dtos.requests;
 
 import com.semicolon.africa.tapprbackend.user.enums.Role;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 
 @Data
 public class CreateNewUserRequest {
     @NotEmpty(message = "first name cannot be empty")
+    @Pattern(
+            regexp = "^[a-zA-ZÀ-ÖØ-öø-ÿ'\\- ]+$",
+            message = "First name contains invalid characters"
+    )
     private String firstName;
 
+    // Add the same for last name
     @NotEmpty(message = "last name cannot be empty")
+    @Pattern(
+            regexp = "^[a-zA-ZÀ-ÖØ-öø-ÿ'\\- ]+$",
+            message = "Last name contains invalid characters"
+    )
     private String lastName;
 
-    @NotEmpty(message = "phone number cannot be empty")
+    @Pattern(regexp = "^\\+?[0-9\\s]{7,14}$",
+            message = "Invalid phone number format")
     private String phoneNumber;
 
-    @NotEmpty(message = "email address cannot be empty")
+    @Email(message = "Invalid email format")
     private String email;
 
     @NotEmpty(message = "password cannot be empty")
