@@ -1,0 +1,12 @@
+package com.semicolon.africa.tapprbackend.user.services.implementations;
+
+import com.semicolon.africa.tapprbackend.user.data.models.User;
+import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
+import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserResponse;
+import com.semicolon.africa.tapprbackend.user.services.interfaces.UserService;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+}

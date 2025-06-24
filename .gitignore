@@ -27,7 +27,10 @@ target/
 /.nb-gradle/
 build/
 !**/src/main/**/build/
-!**/src/test/**/build/
+!**/src/test/**/build/*.env.*
+http-client.cookies
+src/main/resources/secrets.properties
+#application.properties
 
 ### VS Code ###
 .vscode/
