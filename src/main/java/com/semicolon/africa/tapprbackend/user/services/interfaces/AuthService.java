@@ -12,6 +12,5 @@ import org.springframework.stereotype.Component;
 public interface AuthService {
     CreateNewUserResponse createNewUser(CreateNewUserRequest newUserRequest);
     LoginResponse login(LoginRequest loginRequest);
-
     LogoutUserResponse logOut(LogoutRequest logOutRequest);
 }
