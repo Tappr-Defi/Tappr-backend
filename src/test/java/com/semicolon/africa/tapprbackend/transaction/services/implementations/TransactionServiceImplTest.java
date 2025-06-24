@@ -16,8 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 
 import java.math.BigDecimal;
@@ -35,10 +34,10 @@ public class TransactionServiceImplTest {
     @Autowired
     private TransactionService transactionService;
 
-    @MockBean
+    @MockitoBean
     private TransactionRepository transactionRepository;
 
-    @MockBean
+    @MockitoBean
     private UserRepository userRepository;
 
     private CreateTransactionRequest createTransactionRequest;
@@ -55,7 +54,7 @@ public class TransactionServiceImplTest {
         merchant.setPhoneNumber("+2348123456789");
 
         createTransactionRequest = new CreateTransactionRequest();
-        createTransactionRequest.setMerchantId(1L);
+        createTransactionRequest.setMerchantId(UUID.randomUUID());
         createTransactionRequest.setAmount(BigDecimal.valueOf(1000));
         createTransactionRequest.setCurrency("NGN");
         createTransactionRequest.setStatus("PENDING");
@@ -69,7 +68,7 @@ public class TransactionServiceImplTest {
         transaction.setStatus(TransactionStatus.PENDING);
         transaction.setInitiatedAt(LocalDateTime.now());
 
-        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(merchant));
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(merchant));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
 
     }
@@ -118,7 +117,7 @@ public class TransactionServiceImplTest {
 
     @Test
     public void testCreateTransaction_merchantNotFound_throwsException() {
-        when(userRepository.findById(any(Long.class))).thenReturn(Optional.empty());
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
         MerchantNotFoundException exception = assertThrows(MerchantNotFoundException.class, () -> {
             transactionService.createTransaction(createTransactionRequest);

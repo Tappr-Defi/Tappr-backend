@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +13,7 @@ import lombok.Setter;
 @Getter
 public class CreateTransactionRequest {
 
-    private String merchantId;
+    private UUID merchantId;
 
     private BigDecimal amount;
 

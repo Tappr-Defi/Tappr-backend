@@ -6,7 +6,7 @@ import com.semicolon.africa.tapprbackend.user.enums.Role;
 import com.semicolon.africa.tapprbackend.kyc.data.models.KycDocument;
 import com.semicolon.africa.tapprbackend.notification.data.Notification;
 import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
-import com.semicolon.africa.tapprbackend.Wallet.data.LoyaltyWallet;
+import com.semicolon.africa.tapprbackend.Wallet.data.model.LoyaltyWallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
