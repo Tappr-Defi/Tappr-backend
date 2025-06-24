@@ -8,7 +8,6 @@ import com.semicolon.africa.tapprbackend.notification.data.Notification;
 import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
 import com.semicolon.africa.tapprbackend.Wallet.data.LoyaltyWallet;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -71,11 +70,14 @@ public class User {
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Transaction> transactions;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private LoyaltyWallet loyaltyWallet;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private MerchantProfile merchantProfile;
 
 
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

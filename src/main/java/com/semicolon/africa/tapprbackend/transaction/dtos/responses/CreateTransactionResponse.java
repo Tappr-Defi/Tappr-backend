@@ -6,26 +6,19 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Setter
 @Getter
 public class CreateTransactionResponse {
 
-    private Long transactionId;
-
+    private UUID transactionId;
     private String transactionRef;
-
     private String merchantName; // from User
-
     private BigDecimal amount;
-
     private String currency;
-
     private TransactionStatus status;
-
     private LocalDateTime initiatedAt;
-
     private LocalDateTime completedAt;
-
     private String receiptUrl; // or receipt ID if applicable
 }
