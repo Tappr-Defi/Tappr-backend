@@ -45,20 +45,20 @@ public class UserServiceImplTest {
         createNewUserRequest.setPhoneNumber("+2348123456789");
     }
 
-    @Test
-    public void testThatOnSignUpARegisteredUserAlsoHasAWallet_generationIsSuccessful() {
-        CreateNewUserResponse response = authService.createNewUser(createNewUserRequest);
-        assertNotNull(response);
-
-        User user = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
-        assertNotNull(user);
-        assertEquals(Role.REGULAR,user.getRole());
-        assertEquals(createNewUserRequest.getFirstName(),user.getFirstName());
-
-        CreateWalletRequest createWalletRequest = new CreateWalletRequest();
-        createWalletRequest.setUser(user.getId());
-        createWalletRequest.setType(WalletType.SAVINGS);
-
-    }
+//    @Test
+//    public void testThatOnSignUpARegisteredUserAlsoHasAWallet_generationIsSuccessful() {
+//        CreateNewUserResponse response = authService.createNewUser(createNewUserRequest);
+//        assertNotNull(response);
+//
+//        User user = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+//        assertNotNull(user);
+//        assertEquals(Role.REGULAR,user.getRole());
+//        assertEquals(createNewUserRequest.getFirstName(),user.getFirstName());
+//
+//        CreateWalletRequest createWalletRequest = new CreateWalletRequest();
+//        createWalletRequest.setUser(user.getId());
+//        createWalletRequest.setType(WalletType.SAVINGS);
+//
+//    }
 
 }

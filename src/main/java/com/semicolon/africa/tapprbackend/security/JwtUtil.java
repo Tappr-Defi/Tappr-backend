@@ -16,6 +16,9 @@ import javax.crypto.SecretKey;
 @Component
 public class JwtUtil {
 
+    @Value("${jwt.refresh-expiration-ms}}")
+    private long refreshExpirationMs;
+
     private final SecretKey secretKey;
 
     public JwtUtil(@Value("${jwt.secret}")String secret) {
@@ -58,4 +61,22 @@ public class JwtUtil {
                 .get("role", String.class);
     }
 
+    public String generateRefreshToken(String email, Role role) {
+//        long refreshExpirationMs = jwtExpirationMs * 12;
+
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("role", role.name())
+                .claim("type", "refresh")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+
+    public boolean validateRefreshToken(String token) {
+        return false;
+    }
 }

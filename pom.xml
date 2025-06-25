@@ -109,6 +109,22 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- google phone number Dependencies -->
+
+        <!--        <dependency>-->
+        <!--            <groupId>com.googlecode.libphonenumber</groupId>-->
+        <!--            <artifactId>libphonenumber</artifactId>-->
+        <!--            <version>8.13.32</version>-->
+        <!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>8.13.13</version>
+        </dependency>
+
+
+
     </dependencies>
 
     <build>

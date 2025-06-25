@@ -1,6 +1,13 @@
 package com.semicolon.africa.tapprbackend.user.services.implementations;
 
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.semicolon.africa.tapprbackend.Wallet.data.repositories.WalletRepository;
+import com.semicolon.africa.tapprbackend.Wallet.exceptions.WalletCreationFailedException;
+import com.semicolon.africa.tapprbackend.Wallet.service.interfaces.WalletService;
 import com.semicolon.africa.tapprbackend.security.JwtUtil;
+import com.semicolon.africa.tapprbackend.tapprException.TapprException;
+import com.semicolon.africa.tapprbackend.user.data.models.RefreshToken;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
@@ -12,170 +19,180 @@ import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
 import com.semicolon.africa.tapprbackend.user.exceptions.UserNotFoundException;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final WalletService walletService;
+    private final WalletRepository walletRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
 
-    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           JwtUtil jwtUtil,
+                           WalletService walletService,
+                           WalletRepository walletRepository,
+                           RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.walletService = walletService;
+        this.walletRepository = walletRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
+    @Transactional
     @Override
-    public CreateNewUserResponse createNewUser(CreateNewUserRequest createNewUserRequest) {
-        log.info("Creating a new user: " + createNewUserRequest.toString());
-        validateSignUpRequest(createNewUserRequest);
-        validateUserDoesNotExist(createNewUserRequest);
-        log.info("Validation successful");
-        String hashedPassword = passwordEncoder.encode(createNewUserRequest.getPassword());
-        log.info("Password has been hashed");
-        User newUser = newUserCreation(createNewUserRequest, hashedPassword);
-        return getCreateNewUserResponse(newUser);
+    public CreateNewUserResponse createNewUser(CreateNewUserRequest request) {
+        log.info("Creating a new user: {}", request);
+        validateSignUpRequest(request);
+
+        String email = request.getEmail().toLowerCase().trim();
+        String phone = normalizePhoneNumber(request.getPhoneNumber());
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("User with this email already exists");
+        }
+        if (userRepository.existsByPhoneNumber(phone)) {
+            throw new IllegalArgumentException("Phone number already registered");
+        }
+
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
+        User user = new User();
+        user.setFirstName(request.getFirstName().trim());
+        user.setLastName(request.getLastName().trim());
+        user.setEmail(email);
+        user.setPasswordHash(hashedPassword);
+        user.setPhoneNumber(phone);
+        user.setRole(Role.REGULAR);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setKycVerified(false);
+
+        userRepository.save(user);
+        log.info("User saved to database: {}", email);
+
+        return new CreateNewUserResponse(
+                String.valueOf(user.getId()),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                "User created successfully"
+        );
     }
 
     private void validateSignUpRequest(CreateNewUserRequest request) {
-        nullOrEmptyValueChecker(request);
-        validateEntriesForSpecialCharsAndWhiteSpaces(request);
-    }
+        if (isNullOrEmpty(request.getFirstName())) throw new IllegalArgumentException("First name is required");
+        if (isNullOrEmpty(request.getLastName())) throw new IllegalArgumentException("Last name is required");
+        if (isNullOrEmpty(request.getEmail())) throw new IllegalArgumentException("Email is required");
+        if (isNullOrEmpty(request.getPassword())) throw new IllegalArgumentException("Password is required");
+        if (isNullOrEmpty(request.getPhoneNumber())) throw new IllegalArgumentException("Phone number is required");
 
-    private static void nullOrEmptyValueChecker(CreateNewUserRequest request) {
-        if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) {
-            throw new IllegalArgumentException("First name is required");
-        }
-        if (request.getLastName() == null || request.getLastName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Last name is required");
-        }
-        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("Password is required");
-        }
-        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty()) {
-            throw new IllegalArgumentException("Phone number is required");
-        }
-    }
-
-    private static void validateEntriesForSpecialCharsAndWhiteSpaces(CreateNewUserRequest request) {
-        String emailRegex = "^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
-        if (!request.getEmail().matches(emailRegex)) {
+        if (!request.getEmail().matches("^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
             throw new IllegalArgumentException("Invalid email format");
-        }
-        String nameRegex = "^[\\p{L}' -]+$";
-        if (!request.getFirstName().matches(nameRegex)) {
-            throw new IllegalArgumentException("First name contains invalid characters");
-        }
-        if (!request.getLastName().matches(nameRegex)) {
-            throw new IllegalArgumentException("Last name contains invalid characters");
         }
         if (request.getPassword().contains(" ")) {
             throw new IllegalArgumentException("Password must not contain whitespace");
         }
     }
 
+    @Transactional
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
-            throw new UserNotFoundException("Email is required");
+        String email = loginRequest.getEmail().toLowerCase().trim();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User with that email doesn't exist"));
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Incorrect credentials");
         }
 
-        String emailLowerCase = loginRequest.getEmail().toLowerCase().trim();
-        User user = checkIfUserExistsInDb(emailLowerCase);
-        boolean isValidCredentials = passwordEncoder.matches(loginRequest.getPassword(),
-                user.getPasswordHash());
-        if (!isValidCredentials) throw new IllegalArgumentException("Incorrect credentials");
-
         user.setLoggedIn(true);
+        user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        return getLoginResponse(user);
+        createWalletIfNotExists(user);
+        return new LoginResponse(
+                jwtUtil.generateToken(user.getEmail(), user.getRole()),
+                jwtUtil.generateRefreshToken(user.getEmail(), user.getRole()),
+                String.valueOf(user.getId()),
+                user.getRole(),
+                true,
+                "Logged in successfully"
+        );
     }
 
-    private User checkIfUserExistsInDb(String email) {
-        return getUserFromDb(email)
-                .orElseThrow(() -> new UserNotFoundException("User with that email doesn't exist"));
+    private void createWalletIfNotExists(User user) {
+        if (!walletRepository.existsByUser(user)) {
+            try {
+                walletService.createWalletIfNotExists(user);
+                log.info("Wallet created for user: {}", user.getEmail());
+            } catch (WalletCreationFailedException e) {
+                log.error("Wallet creation failed for user {}: {}", user.getEmail(), e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public LoginResponse refreshAccessToken(String refreshTokenStr) {
+        RefreshToken refreshToken = refreshTokenService.findByToken(refreshTokenStr)
+                .map(refreshTokenService::verifyExpiration)
+                .orElseThrow(() -> new TapprException("Invalid or expired refresh token"));
+
+        User user = refreshToken.getUser();
+        refreshTokenService.revokeAllUserTokens(user);
+        RefreshToken newRefresh = refreshTokenService.createRefreshToken(user);
+
+        return new LoginResponse(
+                jwtUtil.generateToken(user.getEmail(), user.getRole()),
+                newRefresh.getToken(),
+                String.valueOf(user.getId()),
+                user.getRole(),
+                true,
+                "Token refreshed successfully"
+        );
     }
 
     @Override
     public LogoutUserResponse logOut(LogoutRequest logOutRequest) {
-        String emailLowerCase = logOutRequest.getEmail().toLowerCase().trim();
-        User user = getUserFromDb(emailLowerCase)
+        String email = logOutRequest.getEmail().toLowerCase().trim();
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User with that email doesn't exist"));
-        if (user.isLoggedIn()) {
-            user.setLoggedIn(false);
-            userRepository.save(user);
-            return getLogoutUserResponse(user);
-        } else {
-            throw new IllegalArgumentException("You're already logged out");
+
+        if (!user.isLoggedIn()) {
+            throw new IllegalArgumentException("User is already logged out");
         }
+
+        user.setLoggedIn(false);
+        userRepository.save(user);
+
+        return new LogoutUserResponse("Logged Out Successfully", false);
     }
 
-    private Optional<User> getUserFromDb(String email) {
-        return userRepository.findByEmail(email);
+    private boolean isNullOrEmpty(String input) {
+        return input == null || input.trim().isEmpty();
     }
 
-    private static LogoutUserResponse getLogoutUserResponse(User user) {
-        LogoutUserResponse response = new LogoutUserResponse();
-        response.setLoggedIn(user.isLoggedIn());
-        response.setMessage("Logged Out Successfully");
-        return response;
-    }
-
-
-    private LoginResponse getLoginResponse(User user) {
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setMessage("Logged in successfully");
-        loginResponse.setLoggedIn(true);
-        loginResponse.setRefreshToken("");
-        loginResponse.setAccessToken(jwtUtil.generateToken(user.getEmail(), user.getRole()));
-        loginResponse.setUserId(String.valueOf(user.getId()));
-        loginResponse.setRole(user.getRole());
-        return loginResponse;
-    }
-
-    private CreateNewUserResponse getCreateNewUserResponse(User newUser) {
-        CreateNewUserResponse createNewUserResponse = new CreateNewUserResponse();
-        createNewUserResponse.setMessage("User created successfully");
-        createNewUserResponse.setPhoneNumber(newUser.getPhoneNumber());
-        createNewUserResponse.setUserId(String.valueOf(newUser.getId()));
-        createNewUserResponse.setEmail(newUser.getEmail());
-        log.info("User saved to database");
-        return createNewUserResponse;
-    }
-
-    private User newUserCreation(CreateNewUserRequest request, String hashedPassword) {
-        User newUser = new User();
-        newUser.setFirstName(request.getFirstName());
-        newUser.setLastName(request.getLastName());
-        newUser.setEmail(request.getEmail().toLowerCase().trim());
-        newUser.setKycVerified(false);
-        newUser.setPasswordHash(hashedPassword);
-        newUser.setPhoneNumber(request.getPhoneNumber().trim());
-        newUser.setRole(Role.REGULAR);
-        newUser.setCreatedAt(LocalDateTime.now());
-        log.info("User object before saving: {}", newUser);
-        User savedUser = userRepository.save(newUser);
-        log.info("User saved with ID: {}", savedUser.getId());
-        return savedUser;
-    }
-
-    private void validateUserDoesNotExist(CreateNewUserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().toLowerCase().trim())) {
-            throw new IllegalArgumentException("User with this email already exists");
-        }
-        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new IllegalArgumentException("Phone number already registered");
+    private String normalizePhoneNumber(String phone) {
+        try {
+            return phoneUtil.format(
+                    phoneUtil.parse(phone, "NG"),
+                    PhoneNumberUtil.PhoneNumberFormat.E164
+            );
+        } catch (NumberParseException e) {
+            throw new IllegalArgumentException("Invalid phone number format");
         }
     }
 }
