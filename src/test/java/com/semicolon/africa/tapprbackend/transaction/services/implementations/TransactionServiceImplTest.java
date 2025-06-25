@@ -47,20 +47,21 @@ public class TransactionServiceImplTest {
     @BeforeEach
     public void setUp() {
         merchant = new User();
-        merchant.setId(UUID.randomUUID());
+        String merchantId = UUID.randomUUID().toString();
+        merchant.setId(merchantId);
         merchant.setFirstName("John");
         merchant.setLastName("Doe");
         merchant.setEmail("john.doe@example.com");
         merchant.setPhoneNumber("+2348123456789");
 
         createTransactionRequest = new CreateTransactionRequest();
-        createTransactionRequest.setMerchantId(UUID.randomUUID());
+        createTransactionRequest.setMerchantId(merchantId); // use same merchantId
         createTransactionRequest.setAmount(BigDecimal.valueOf(1000));
         createTransactionRequest.setCurrency("NGN");
         createTransactionRequest.setStatus("PENDING");
 
         transaction = new Transaction();
-        transaction.setId(UUID.randomUUID());
+        transaction.setId(UUID.randomUUID().toString());
         transaction.setTransactionRef(UUID.randomUUID().toString());
         transaction.setMerchant(merchant);
         transaction.setAmount(BigDecimal.valueOf(1000));
@@ -68,9 +69,8 @@ public class TransactionServiceImplTest {
         transaction.setStatus(TransactionStatus.PENDING);
         transaction.setInitiatedAt(LocalDateTime.now());
 
-        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(merchant));
+        when(userRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
-
     }
 
     @Test
@@ -117,12 +117,12 @@ public class TransactionServiceImplTest {
 
     @Test
     public void testCreateTransaction_merchantNotFound_throwsException() {
-        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+        String merchantId = createTransactionRequest.getMerchantId();
+        when(userRepository.findById(merchantId)).thenReturn(Optional.empty());
 
         MerchantNotFoundException exception = assertThrows(MerchantNotFoundException.class, () -> {
             transactionService.createTransaction(createTransactionRequest);
         });
-
         assertEquals("Merchant not found", exception.getMessage());
     }
 

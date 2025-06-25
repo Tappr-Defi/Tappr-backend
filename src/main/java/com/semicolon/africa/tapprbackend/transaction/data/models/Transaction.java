@@ -20,7 +20,7 @@ import java.util.UUID;
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
     @Column(name = "transaction_ref", nullable = false, unique = true)
     private String transactionRef;
@@ -31,7 +31,8 @@ public class Transaction {
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
-    
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
     private CurrencyType currency = CurrencyType.NGN;
 

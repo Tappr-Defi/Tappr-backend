@@ -294,19 +294,20 @@ public class AuthServiceImpl implements AuthService {
         return createNewUserResponse;
     }
 
-    private User newUserCreation(CreateNewUserRequest createNewUserRequest, String hashedPassword) {
+    private User newUserCreation(CreateNewUserRequest request, String hashedPassword) {
         User newUser = new User();
-        newUser.setFirstName(createNewUserRequest.getFirstName());
-        newUser.setLastName(createNewUserRequest.getLastName());
-        newUser.setEmail(createNewUserRequest.getEmail().toLowerCase().trim());
+        newUser.setFirstName(request.getFirstName());
+        newUser.setLastName(request.getLastName());
+        newUser.setEmail(request.getEmail().toLowerCase().trim());
         newUser.setKycVerified(false);
         newUser.setPasswordHash(hashedPassword);
-        newUser.setPhoneNumber(createNewUserRequest.getPhoneNumber().trim());
+        newUser.setPhoneNumber(request.getPhoneNumber().trim());
         newUser.setRole(Role.REGULAR);
         newUser.setCreatedAt(LocalDateTime.now());
-        log.info("Saving user to database");
-        userRepository.save(newUser);
-        return newUser;
+        log.info("User object before saving: {}", newUser);
+        User savedUser = userRepository.save(newUser);
+        log.info("User saved with ID: {}", savedUser.getId());
+        return savedUser;
     }
 
     private void validateUserDoesNotExist(CreateNewUserRequest request) {

@@ -12,7 +12,7 @@ import java.util.UUID;
 @Getter
 public class CreateTransactionResponse {
 
-    private UUID transactionId;
+    private String transactionId;
     private String transactionRef;
     private String merchantName; // from User
     private BigDecimal amount;
