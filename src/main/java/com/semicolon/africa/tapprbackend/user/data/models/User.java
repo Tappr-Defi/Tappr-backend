@@ -10,10 +10,10 @@ import com.semicolon.africa.tapprbackend.Wallet.data.model.LoyaltyWallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Setter
 @Getter
@@ -22,11 +22,11 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @RequiredArgsConstructor
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @EqualsAndHashCode.Include
-    @ToString.Include
-    private UUID id;
+    @Column(name = "id", updatable = false, nullable = false, length = 36)
+    private String id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -72,7 +72,6 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private MerchantProfile merchantProfile;
-
 
     public String getFullName() {
         return firstName + " " + lastName;
