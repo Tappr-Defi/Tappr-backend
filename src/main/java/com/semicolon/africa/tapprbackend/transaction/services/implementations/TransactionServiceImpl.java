@@ -25,7 +25,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
-      
+
         User merchant = userRepository.findById(request.getMerchantId())
                 .orElseThrow(() -> new MerchantNotFoundException("Merchant not found"));
 
