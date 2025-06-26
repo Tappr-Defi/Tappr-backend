@@ -17,6 +17,7 @@ import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserRespon
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
+import com.semicolon.africa.tapprbackend.user.exceptions.PasswordLenghtMismatchException;
 import com.semicolon.africa.tapprbackend.user.exceptions.UserNotFoundException;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
 import jakarta.transaction.Transactional;
@@ -71,6 +72,21 @@ public class AuthServiceImpl implements AuthService {
 
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
+        User user = getNewUserObjectForRegistration(request, email, hashedPassword, phone);
+
+        return getCreateNewUserResponse(user);
+    }
+
+    private static CreateNewUserResponse getCreateNewUserResponse(User user) {
+        return new CreateNewUserResponse(
+                "User created successfully",
+                String.valueOf(user.getId()),
+                user.getEmail(),
+                user.getPhoneNumber()
+        );
+    }
+
+    private User getNewUserObjectForRegistration(CreateNewUserRequest request, String email, String hashedPassword, String phone) {
         User user = new User();
         user.setFirstName(request.getFirstName().trim());
         user.setLastName(request.getLastName().trim());
@@ -83,16 +99,8 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
         log.info("User saved to database: {}", email);
-
-        return new CreateNewUserResponse(
-                "User created successfully",
-                String.valueOf(user.getId()),
-                user.getEmail(),
-                user.getPhoneNumber()
-        );
+        return user;
     }
-
-
 
 
     private void validateSignUpRequest(CreateNewUserRequest request) {
@@ -100,9 +108,11 @@ public class AuthServiceImpl implements AuthService {
         if (isNullOrEmpty(request.getLastName())) throw new IllegalArgumentException("Last name is required");
         if (isNullOrEmpty(request.getEmail())) throw new IllegalArgumentException("Email is required");
         if (isNullOrEmpty(request.getPassword())) throw new IllegalArgumentException("Password is required");
+        if (request.getPassword().length() < 8) throw new PasswordLenghtMismatchException("Password must be between 8 and 20 characters");
         if (isNullOrEmpty(request.getPhoneNumber())) throw new IllegalArgumentException("Phone number is required");
 
-        if (!request.getEmail().matches("^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+        String trimmedEmail = request.getEmail().trim();
+        if (!trimmedEmail.matches("^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
             throw new IllegalArgumentException("Invalid email format");
         }
         if (request.getPassword().contains(" ")) {
@@ -185,10 +195,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LogoutUserResponse logOut(LogoutRequest logOutRequest) {
+        if (logOutRequest.getEmail() == null || logOutRequest.getEmail().trim().isEmpty()) {
+            throw new UserNotFoundException("Email is required");
+        }
         String email = logOutRequest.getEmail().toLowerCase().trim();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User with that email doesn't exist"));
+                .orElseThrow(() -> new UserNotFoundException("User with that email doesn't exist"));
 
         if (!user.isLoggedIn()) {
             throw new IllegalArgumentException("User is already logged out");

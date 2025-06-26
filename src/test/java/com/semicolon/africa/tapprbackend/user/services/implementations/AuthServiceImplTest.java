@@ -10,6 +10,7 @@ import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserRespon
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
 import com.semicolon.africa.tapprbackend.user.enums.Role;
+import com.semicolon.africa.tapprbackend.user.exceptions.PasswordLenghtMismatchException;
 import com.semicolon.africa.tapprbackend.user.exceptions.UserNotFoundException;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
 import org.junit.jupiter.api.BeforeEach;
@@ -491,6 +492,337 @@ public class AuthServiceImplTest {
         logOutRequest.setEmail(loginRequest.getEmail());
         LogoutUserResponse logoutUserResponse = authenticationService.logOut(logOutRequest);
         assertFalse(logoutUserResponse.isLoggedIn());
+    }
+
+    @Test
+    public void testLoginFailsWithNullEmail() {
+        loginRequest.setEmail(null);
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.login(loginRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLoginFailsWithEmptyEmail() {
+        loginRequest.setEmail("");
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.login(loginRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLoginFailsWithWhitespaceOnlyEmail() {
+        loginRequest.setEmail("   ");
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.login(loginRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLoginFailsWithNullPassword() {
+        authenticationService.createNewUser(createNewUserRequest);
+        loginRequest.setPassword(null);
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.login(loginRequest);
+        });
+    }
+
+    @Test
+    public void testLoginUpdatesLastLoginTime() {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        User userBeforeLogin = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertNull(userBeforeLogin.getLastLoginAt());
+        
+        authenticationService.login(loginRequest);
+        
+        User userAfterLogin = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertNotNull(userAfterLogin.getLastLoginAt());
+    }
+
+    @Test
+    public void testLoginSetsUserAsLoggedIn() {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        User userBeforeLogin = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertFalse(userBeforeLogin.isLoggedIn());
+        
+        authenticationService.login(loginRequest);
+        
+        User userAfterLogin = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertTrue(userAfterLogin.isLoggedIn());
+    }
+
+    @Test
+    public void testLoginWithEmailContainingSpaces() {
+        authenticationService.createNewUser(createNewUserRequest);
+        loginRequest.setEmail("  " + createNewUserRequest.getEmail() + "  ");
+        
+        LoginResponse response = authenticationService.login(loginRequest);
+        assertNotNull(response);
+        assertTrue(response.isLoggedIn());
+    }
+
+    @Test
+    public void testMultipleSuccessiveLogins() {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        LoginResponse firstLogin = authenticationService.login(loginRequest);
+        assertTrue(firstLogin.isLoggedIn());
+        
+        LoginResponse secondLogin = authenticationService.login(loginRequest);
+        assertTrue(secondLogin.isLoggedIn());
+        
+        assertNotEquals(firstLogin.getAccessToken(), secondLogin.getAccessToken());
+    }
+
+    // ========== Additional Logout Test Scenarios ==========
+
+    @Test
+    public void testLogoutFailsWithNonExistentUser() {
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail("nonexistent@example.com");
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("User with that email doesn't exist", exception.getMessage());
+    }
+
+    @Test
+    public void testLogoutFailsWithNullEmail() {
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail(null);
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLogoutFailsWithEmptyEmail() {
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail("");
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLogoutFailsWithWhitespaceOnlyEmail() {
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail("   ");
+        
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("Email is required", exception.getMessage());
+    }
+
+    @Test
+    public void testLogoutWithCaseInsensitiveEmail() {
+        authenticationService.createNewUser(createNewUserRequest);
+        authenticationService.login(loginRequest);
+        
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail(createNewUserRequest.getEmail().toUpperCase());
+        
+        LogoutUserResponse response = authenticationService.logOut(logOutRequest);
+        assertFalse(response.isLoggedIn());
+    }
+
+    @Test
+    public void testLogoutUserWhoWasNeverLoggedIn() {
+        authenticationService.createNewUser(createNewUserRequest);
+
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail(createNewUserRequest.getEmail());
+        
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("User is already logged out", exception.getMessage());
+    }
+
+    @Test
+    public void testMultipleLogouts() {
+        authenticationService.createNewUser(createNewUserRequest);
+        authenticationService.login(loginRequest);
+        
+        LogoutRequest logOutRequest = new LogoutRequest();
+        logOutRequest.setEmail(createNewUserRequest.getEmail());
+        
+        LogoutUserResponse firstLogout = authenticationService.logOut(logOutRequest);
+        assertFalse(firstLogout.isLoggedIn());
+        
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.logOut(logOutRequest);
+        });
+        assertEquals("User is already logged out", exception.getMessage());
+    }
+
+
+    @Test
+    public void testSignUpFailsWithInvalidPhoneNumberFormat() {
+        createNewUserRequest.setPhoneNumber("invalid-phone");
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.createNewUser(createNewUserRequest);
+        });
+    }
+
+    @Test
+    public void testSignUpSucceedsWithInternationalPhoneNumber() {
+        createNewUserRequest.setPhoneNumber("+1234567890123");
+        
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        assertEquals("User created successfully", response.getMessage());
+    }
+
+    @Test
+    public void testSignUpFailsWithShortPassword() {
+        createNewUserRequest.setPassword("123");
+        
+        PasswordLenghtMismatchException exception = assertThrows(PasswordLenghtMismatchException.class, () -> {
+            authenticationService.createNewUser(createNewUserRequest);
+        });
+        assertEquals("Password must be between 8 and 20 characters", exception.getMessage());
+    }
+
+    @Test
+    public void testSignUpSucceedsWithLongPassword() {
+        createNewUserRequest.setPassword("thisIsAVeryLongPasswordThatShouldStillWork123456789");
+        
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        assertEquals("User created successfully", response.getMessage());
+    }
+
+    @Test
+    public void testSignUpFailsWithEmailMissingDomain() {
+        createNewUserRequest.setEmail("john@");
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.createNewUser(createNewUserRequest);
+        });
+    }
+
+    @Test
+    public void testSignUpFailsWithEmailMissingTLD() {
+        createNewUserRequest.setEmail("john@domain");
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.createNewUser(createNewUserRequest);
+        });
+    }
+
+    @Test
+    public void testSignUpTrimsWhitespaceFromFields() {
+        createNewUserRequest.setFirstName("  John  ");
+        createNewUserRequest.setLastName("  Doe  ");
+        createNewUserRequest.setEmail("  john.doe@example.com  ");
+        
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        
+        User savedUser = userRepository.findByEmail("john.doe@example.com").get();
+        assertEquals("John", savedUser.getFirstName());
+        assertEquals("Doe", savedUser.getLastName());
+        assertEquals("john.doe@example.com", savedUser.getEmail());
+    }
+
+    @Test
+    public void testSignUpWithVeryLongValidNames() {
+        String longName = "VeryLongNameThatIsStillValidAndShouldBeAcceptedByTheSystem";
+        createNewUserRequest.setFirstName(longName);
+        createNewUserRequest.setLastName(longName);
+        
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
+        assertEquals("User created successfully", response.getMessage());
+    }
+
+    @Test
+    public void testUserCreationSetsCorrectTimestamp() {
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        
+        User savedUser = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertNotNull(savedUser.getCreatedAt());
+        assertTrue(savedUser.getCreatedAt().isBefore(java.time.LocalDateTime.now().plusSeconds(1)));
+    }
+
+    @Test
+    public void testUserCreationSetsDefaultValues() {
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        
+        User savedUser = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
+        assertEquals(Role.REGULAR, savedUser.getRole());
+        assertFalse(savedUser.isKycVerified());
+        assertFalse(savedUser.isLoggedIn());
+        assertNull(savedUser.getLastLoginAt());
+    }
+
+    // ========== Edge Cases and Error Handling ==========
+
+    @Test
+    public void testSignUpFailsWithDuplicatePhoneNumber() {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        CreateNewUserRequest duplicatePhoneRequest = new CreateNewUserRequest();
+        duplicatePhoneRequest.setFirstName("Jane");
+        duplicatePhoneRequest.setLastName("Smith");
+        duplicatePhoneRequest.setEmail("jane.smith@example.com");
+        duplicatePhoneRequest.setPassword("differentPassword123");
+        duplicatePhoneRequest.setPhoneNumber(createNewUserRequest.getPhoneNumber()); // Same phone number
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            authenticationService.createNewUser(duplicatePhoneRequest);
+        });
+    }
+
+    @Test
+    public void testLoginWithDifferentCaseEmailSucceeds() {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        LoginRequest upperCaseEmailLogin = new LoginRequest();
+        upperCaseEmailLogin.setEmail(createNewUserRequest.getEmail().toUpperCase());
+        upperCaseEmailLogin.setPassword(createNewUserRequest.getPassword());
+        
+        LoginResponse response = authenticationService.login(upperCaseEmailLogin);
+        assertNotNull(response);
+        assertTrue(response.isLoggedIn());
+    }
+
+    @Test
+    public void testJwtTokenContainsCorrectUserInfo() {
+        authenticationService.createNewUser(createNewUserRequest);
+        LoginResponse response = authenticationService.login(loginRequest);
+        
+        assertNotNull(response.getAccessToken());
+        assertNotNull(response.getRefreshToken());
+        assertEquals(Role.REGULAR, response.getRole());
+        assertNotNull(response.getUserId());
+    }
+
+    @Test
+    public void testRefreshTokenIsGeneratedOnLogin() {
+        authenticationService.createNewUser(createNewUserRequest);
+        LoginResponse response = authenticationService.login(loginRequest);
+        
+        assertNotNull(response.getRefreshToken());
+        assertFalse(response.getRefreshToken().isEmpty());
+        assertNotEquals(response.getAccessToken(), response.getRefreshToken());
     }
 
 }
