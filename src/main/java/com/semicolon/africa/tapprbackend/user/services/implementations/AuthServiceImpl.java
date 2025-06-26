@@ -113,6 +113,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
+            throw new UserNotFoundException("Email is required");
+        }
         String email = loginRequest.getEmail().toLowerCase().trim();
 
         User user = userRepository.findByEmail(email)
@@ -129,12 +132,12 @@ public class AuthServiceImpl implements AuthService {
 //        createWalletIfNotExists(user);
         createWalletForUser(user);
         return new LoginResponse(
+                "Logged in successfully",
                 jwtUtil.generateToken(user.getEmail(), user.getRole()),
                 jwtUtil.generateRefreshToken(user.getEmail(), user.getRole()),
-                String.valueOf(user.getId()),
                 user.getRole(),
                 true,
-                "Logged in successfully"
+                String.valueOf(user.getId())
         );
     }
 
@@ -171,12 +174,12 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken newRefresh = refreshTokenService.createRefreshToken(user);
 
         return new LoginResponse(
+                "Token refreshed successfully",
                 jwtUtil.generateToken(user.getEmail(), user.getRole()),
                 newRefresh.getToken(),
-                String.valueOf(user.getId()),
                 user.getRole(),
                 true,
-                "Token refreshed successfully"
+                String.valueOf(user.getId())
         );
     }
 
