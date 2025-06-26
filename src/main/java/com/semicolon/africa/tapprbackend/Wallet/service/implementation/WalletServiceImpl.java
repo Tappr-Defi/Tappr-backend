@@ -1,11 +1,13 @@
-package com.semicolon.africa.tapprbackend.Wallet.service.implentation;
+
+package com.semicolon.africa.tapprbackend.Wallet.service.implementation;
 
 import com.semicolon.africa.tapprbackend.Wallet.data.model.Wallet;
 import com.semicolon.africa.tapprbackend.Wallet.data.repositories.WalletRepository;
 import com.semicolon.africa.tapprbackend.Wallet.dtos.requests.CreateWalletRequest;
-import com.semicolon.africa.tapprbackend.Wallet.dtos.requests.WalletCurrency;
-import com.semicolon.africa.tapprbackend.Wallet.dtos.responses.CreateWalletResponse;
+import com.semicolon.africa.tapprbackend.Wallet.dtos.response.CreateWalletResponse;
+import com.semicolon.africa.tapprbackend.Wallet.enums.WalletCurrency;
 import com.semicolon.africa.tapprbackend.Wallet.enums.WalletStatus;
+import com.semicolon.africa.tapprbackend.Wallet.exceptions.WalletAlreadyExistsException;
 import com.semicolon.africa.tapprbackend.Wallet.service.interfaces.WalletService;
 import com.semicolon.africa.tapprbackend.security.JwtUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
@@ -62,7 +64,36 @@ public class WalletServiceImpl implements WalletService {
         wallet.setAccountNumber(generateAccountNumberFromPhoneNumber(user));
 
         walletRepository.save(wallet);
+        
+        // Update the user with the wallet reference
+        user.setWallet(wallet);
+        userRepository.save(user);
+        
         log.info("Wallet created for user {} with currency {}", user.getEmail(), currency);
+    }
+
+    @Override
+    public CreateWalletResponse createWallet(User user) {
+        if (walletRepository.existsByUser(user)) {
+            log.info("Wallet already exists for user: {}", user.getEmail());
+            throw new WalletAlreadyExistsException("User already has a wallet");
+        }
+
+        WalletCurrency currency = resolveCurrencyFromPhoneNumber(user.getPhoneNumber());
+        Wallet wallet = new Wallet();
+        wallet.setUser(user);
+        wallet.setBalance(BigDecimal.ZERO);
+        wallet.setCurrencyType(currency);
+        wallet.setWalletType(currency.getWalletType());
+        wallet.setStatus(WalletStatus.ACTIVE);
+        wallet.setAccountNumber(generateAccountNumberFromPhoneNumber(user));
+
+        walletRepository.save(wallet);
+        user.setWallet(wallet);
+        userRepository.save(user);
+
+        log.info("Wallet created for user {} with currency {}", user.getEmail(), currency);
+        return mapToCreateWalletResponse(wallet);
     }
 
 
@@ -122,10 +153,17 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
+//    public WalletCurrency resolveCurrencyFromPhoneNumber(String phoneNumber) {
+//        String countryCode = getCountryCodeFromPhoneNumber(phoneNumber);
+//        return resolveCurrencyFromCountry(countryCode);
+//    }
+
     public WalletCurrency resolveCurrencyFromPhoneNumber(String phoneNumber) {
         String countryCode = getCountryCodeFromPhoneNumber(phoneNumber);
+//        return CurrencyResolver.resolveCurrencyFromCountry(countryCode);
         return resolveCurrencyFromCountry(countryCode);
     }
+
 
 
     private WalletCurrency resolveCurrencyFromCountry(String countryCode) {
@@ -197,3 +235,9 @@ public class WalletServiceImpl implements WalletService {
         return response;
     }
 }
+
+
+
+
+
+

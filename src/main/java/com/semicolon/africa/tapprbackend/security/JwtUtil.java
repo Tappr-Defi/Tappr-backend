@@ -16,7 +16,7 @@ import javax.crypto.SecretKey;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.refresh-expiration-ms}}")
+    @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
     private final SecretKey secretKey;

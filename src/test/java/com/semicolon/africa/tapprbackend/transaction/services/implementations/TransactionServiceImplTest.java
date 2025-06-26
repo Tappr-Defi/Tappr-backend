@@ -47,7 +47,7 @@ public class TransactionServiceImplTest {
     @BeforeEach
     public void setUp() {
         merchant = new User();
-        String merchantId = UUID.randomUUID().toString();
+        UUID merchantId = UUID.randomUUID();
         merchant.setId(merchantId);
         merchant.setFirstName("John");
         merchant.setLastName("Doe");
@@ -55,7 +55,7 @@ public class TransactionServiceImplTest {
         merchant.setPhoneNumber("+2348123456789");
 
         createTransactionRequest = new CreateTransactionRequest();
-        createTransactionRequest.setMerchantId(merchantId); // use same merchantId
+        createTransactionRequest.setMerchantId(String.valueOf(merchantId));
         createTransactionRequest.setAmount(BigDecimal.valueOf(1000));
         createTransactionRequest.setCurrency("NGN");
         createTransactionRequest.setStatus("PENDING");
@@ -69,7 +69,7 @@ public class TransactionServiceImplTest {
         transaction.setStatus(TransactionStatus.PENDING);
         transaction.setInitiatedAt(LocalDateTime.now());
 
-        when(userRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
+        when(userRepository.findById(String.valueOf(merchantId))).thenReturn(Optional.of(merchant));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
     }
 

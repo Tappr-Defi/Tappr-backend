@@ -1,5 +1,7 @@
 package com.semicolon.africa.tapprbackend.user.controllers;
 
+import com.semicolon.africa.tapprbackend.security.JwtUtil;
+import com.semicolon.africa.tapprbackend.tapprException.TapprException;
 import com.semicolon.africa.tapprbackend.user.data.models.RefreshToken;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
@@ -8,14 +10,23 @@ import com.semicolon.africa.tapprbackend.user.dtos.requests.LogoutRequest;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserResponse;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
+import com.semicolon.africa.tapprbackend.user.services.implementations.RefreshTokenService;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
-import com.semicolon.africa.tapprbackend.tapprException.TapprException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -23,23 +34,85 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Authentication", description = "Authentication and user management endpoints")
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
+    @Operation(
+            summary = "Register a new user",
+            description = "Creates a new user account with the provided information"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "User registered successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateNewUserResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid input data or user already exists",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @PostMapping("/register")
     public ResponseEntity<CreateNewUserResponse> register(
             @Valid @RequestBody CreateNewUserRequest request
     ) {
-        request.setEmail(request.getEmail().trim());
-        request.setFirstName(request.getFirstName().trim());
-        request.setLastName(request.getLastName().trim());
-        request.setEmail(request.getEmail().trim());
-        request.setPhoneNumber(request.getPhoneNumber().trim());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.createNewUser(request));
+        try {
+            log.info("Registration attempt for email: {}", request.getEmail());
+            request.setEmail(request.getEmail().trim());
+            request.setFirstName(request.getFirstName().trim());
+            request.setLastName(request.getLastName().trim());
+            request.setEmail(request.getEmail().trim());
+            request.setPhoneNumber(request.getPhoneNumber().trim());
+            
+            CreateNewUserResponse response = authService.createNewUser(request);
+            log.info("User registered successfully: {}", request.getEmail());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (TapprException e) {
+            log.error("Registration failed for email {}: {}", request.getEmail(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during registration for email {}: {}", request.getEmail(), e.getMessage(), e);
+            throw new TapprException("Registration failed due to an unexpected error: " + e.getMessage());
+        }
     }
 
+    @Operation(
+            summary = "User login",
+            description = "Authenticates a user and returns JWT tokens"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LoginResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid credentials",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User not found",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -56,6 +129,25 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "User logout",
+            description = "Logs out a user and invalidates their session"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Logout successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LogoutUserResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "User already logged out or invalid request",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @PostMapping("/logout")
     public ResponseEntity<LogoutUserResponse> logout(@Valid @RequestBody LogoutRequest request) {
         try {
@@ -72,6 +164,22 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Refresh access token",
+            description = "Generates a new access token using a valid refresh token"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Token refreshed successfully",
+                    content = @Content(mediaType = "application/json")
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid or expired refresh token",
+                    content = @Content(mediaType = "application/json")
+            )
+    })
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
         String token = request.get("refreshToken");
@@ -83,7 +191,6 @@ public class AuthController {
 
         User user = refreshToken.getUser();
 
-        // rotate: revoke old token, issue new one
         refreshTokenService.revokeAllUserTokens(user);
         RefreshToken newToken = refreshTokenService.createRefreshToken(user);
 
@@ -95,14 +202,3 @@ public class AuthController {
         ));
     }
 }
-
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Auth service is running");
-    }
-}
-
-
-
-
-

@@ -52,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
         this.refreshTokenService = refreshTokenService;
     }
 
+
     @Transactional
     @Override
     public CreateNewUserResponse createNewUser(CreateNewUserRequest request) {
@@ -84,12 +85,15 @@ public class AuthServiceImpl implements AuthService {
         log.info("User saved to database: {}", email);
 
         return new CreateNewUserResponse(
+                "User created successfully",
                 String.valueOf(user.getId()),
                 user.getEmail(),
-                user.getPhoneNumber(),
-                "User created successfully"
+                user.getPhoneNumber()
         );
     }
+
+
+
 
     private void validateSignUpRequest(CreateNewUserRequest request) {
         if (isNullOrEmpty(request.getFirstName())) throw new IllegalArgumentException("First name is required");
@@ -122,7 +126,8 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        createWalletIfNotExists(user);
+//        createWalletIfNotExists(user);
+        createWalletForUser(user);
         return new LoginResponse(
                 jwtUtil.generateToken(user.getEmail(), user.getRole()),
                 jwtUtil.generateRefreshToken(user.getEmail(), user.getRole()),
@@ -134,6 +139,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void createWalletIfNotExists(User user) {
+        if (!walletRepository.existsByUser(user)) {
+            try {
+                walletService.createWalletIfNotExists(user);
+                log.info("Wallet created for user: {}", user.getEmail());
+            } catch (WalletCreationFailedException e) {
+                log.error("Wallet creation failed for user {}: {}", user.getEmail(), e.getMessage());
+            }
+        }
+    }
+
+    private void createWalletForUser(User user) {
         if (!walletRepository.existsByUser(user)) {
             try {
                 walletService.createWalletIfNotExists(user);
@@ -196,3 +212,8 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 }
+
+
+
+
+

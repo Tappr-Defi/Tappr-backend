@@ -10,6 +10,8 @@ import com.semicolon.africa.tapprbackend.Wallet.data.model.LoyaltyWallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,7 +27,8 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", columnDefinition = "CHAR(36)", updatable = false, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "id", columnDefinition = "VARCHAR(36)", updatable = false, nullable = false)
     private UUID id;
 
 

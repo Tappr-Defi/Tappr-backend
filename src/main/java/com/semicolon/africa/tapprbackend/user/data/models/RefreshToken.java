@@ -1,6 +1,5 @@
 package com.semicolon.africa.tapprbackend.user.data.models;
 
-import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -16,7 +16,7 @@ import java.util.UUID;
 public class Receipt {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_id", nullable = false)
