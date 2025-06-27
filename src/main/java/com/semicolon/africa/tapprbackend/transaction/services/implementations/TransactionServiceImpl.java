@@ -13,6 +13,8 @@ import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -26,7 +28,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
 
-        User merchant = userRepository.findById(request.getMerchantId())
+        User merchant = userRepository.findById(UUID.fromString(request.getMerchantId()))
                 .orElseThrow(() -> new MerchantNotFoundException("Merchant not found"));
 
 
@@ -35,13 +37,9 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setMerchant(merchant);
         transaction.setAmount(request.getAmount());
         transaction.setCurrency(CurrencyType.valueOf(request.getCurrency()));
-        transaction.setStatus(
-                request.getStatus() != null
-                        ? TransactionStatus.valueOf(request.getStatus().toUpperCase())
-                        : TransactionStatus.PENDING
-        );
         transaction.setInitiatedAt(LocalDateTime.now());
-
+        transaction.setStatus(TransactionStatus.PENDING);
+        transaction.setInitiated(true);
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         return mapToResponse(savedTransaction);
@@ -60,7 +58,8 @@ public class TransactionServiceImpl implements TransactionService {
         response.setCompletedAt(transaction.getCompletedAt());
 
         if (transaction.getReceipt() != null) {
-            response.setReceiptUrl(transaction.getReceipt().getDownloadUrl());
+            response.setMerchantReceiptDownloadUrl(transaction.getReceipt().getMerchantReceiptDownloadUrl());
+            response.setRegularReceiptDownloadUrl(transaction.getReceipt().getRegularReceiptDownloadUrl());
         }
 
         return response;

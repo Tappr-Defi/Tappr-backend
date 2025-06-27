@@ -20,7 +20,7 @@ public class MerchantProfile {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "id",nullable = false, unique = true)
     private User user;
 
     @Column(name = "business_name", nullable = false)

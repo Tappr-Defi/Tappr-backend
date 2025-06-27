@@ -28,7 +28,7 @@ public class RefreshTokenService {
         RefreshToken token = new RefreshToken();
         token.setUser(user);
         token.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
-        String signedJwtToken = jwtUtil.generateRefreshToken(user.getEmail(), user.getRole());
+        String signedJwtToken = jwtUtil.generateRefreshToken(user.getEmail(), user.getId(), user.getRole());
         token.setToken(signedJwtToken);
         token.setRevoked(false);
         return refreshTokenRepository.save(token);

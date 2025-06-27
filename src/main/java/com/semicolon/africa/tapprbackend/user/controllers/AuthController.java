@@ -194,7 +194,7 @@ public class AuthController {
         refreshTokenService.revokeAllUserTokens(user);
         RefreshToken newToken = refreshTokenService.createRefreshToken(user);
 
-        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", newAccessToken,

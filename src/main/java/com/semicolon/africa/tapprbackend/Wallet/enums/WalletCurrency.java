@@ -1,7 +1,6 @@
 
 package com.semicolon.africa.tapprbackend.Wallet.enums;
 
-import com.semicolon.africa.tapprbackend.Wallet.enums.WalletType;
 import lombok.Getter;
 
 @Getter

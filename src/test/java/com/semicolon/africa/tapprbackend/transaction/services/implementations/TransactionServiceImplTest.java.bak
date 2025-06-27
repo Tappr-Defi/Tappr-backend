@@ -57,7 +57,7 @@ public class TransactionServiceImplTest {
         createTransactionRequest = new CreateTransactionRequest();
         createTransactionRequest.setMerchantId(String.valueOf(merchantId));
         createTransactionRequest.setAmount(BigDecimal.valueOf(1000));
-        createTransactionRequest.setCurrency("NGN");
+        createTransactionRequest.setCurrency(CurrencyType.NGN);
         createTransactionRequest.setStatus("PENDING");
 
         transaction = new Transaction();
@@ -95,16 +95,16 @@ public class TransactionServiceImplTest {
 
         assertEquals(merchant, savedTransaction.getMerchant());
         assertEquals(createTransactionRequest.getAmount(), savedTransaction.getAmount());
-        assertEquals(CurrencyType.valueOf(createTransactionRequest.getCurrency()), savedTransaction.getCurrency());
+        assertEquals(createTransactionRequest.getCurrency(), savedTransaction.getCurrency());
         assertEquals(TransactionStatus.valueOf(createTransactionRequest.getStatus().toUpperCase()), savedTransaction.getStatus());
         assertNotNull(savedTransaction.getTransactionRef());
         assertNotNull(savedTransaction.getInitiatedAt());
     }
 
     @Test
-    public void testCreateTransaction_withReceipt_returnsReceiptUrl() {
+    public void testCreateTransaction_withReceipt_returnsMerchantReceiptUrl() {
         Receipt receipt = new Receipt();
-        receipt.setDownloadUrl("https://example.com/receipt.pdf");
+        receipt.setMerchantReceiptDownloadUrl("https://example.com/receipt.pdf");
         transaction.setReceipt(receipt);
 
         when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
@@ -112,7 +112,21 @@ public class TransactionServiceImplTest {
         CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
 
         assertNotNull(response);
-        assertEquals(receipt.getDownloadUrl(), response.getReceiptUrl());
+        assertEquals(receipt.getMerchantReceiptDownloadUrl(), response.getMerchantReceiptDownloadUrl());
+    }
+
+    @Test
+    public void testCreateTransaction_withReceipt_returnsRecipientsReceiptUrl() {
+        Receipt receipt = new Receipt();
+        receipt.setRegularReceiptDownloadUrl("https://example.com/receipt.pdf");
+        transaction.setReceipt(receipt);
+
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
+
+        CreateTransactionResponse response = transactionService.createTransaction(createTransactionRequest);
+
+        assertNotNull(response);
+        assertEquals(receipt.getRegularReceiptDownloadUrl(), response.getRegularReceiptDownloadUrl());
     }
 
     @Test
@@ -135,7 +149,7 @@ public class TransactionServiceImplTest {
 
     @Test
     public void testCreateTransaction_whenInvalidCurrency_shouldThrowException() {
-        createTransactionRequest.setCurrency("INVALID_CURRENCY");
+        createTransactionRequest.setCurrency(CurrencyType.valueOf("INVALID_CURRENCY"));
         assertThrows(IllegalArgumentException.class, () -> {
             transactionService.createTransaction(createTransactionRequest);
         });

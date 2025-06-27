@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -79,10 +80,11 @@ public class UserController {
             }
 
             String email = jwtUtil.extractEmail(token);
+            String userId = jwtUtil.extractUserId(token);
             String role = jwtUtil.extractRole(token);
             
-            // Generate new access token
-            String newAccessToken = jwtUtil.generateToken(email, 
+            String newAccessToken = jwtUtil.generateToken(email,
+                UUID.fromString(userId),
                 com.semicolon.africa.tapprbackend.user.enums.Role.valueOf(role));
 
             Map<String, String> response = new HashMap<>();
