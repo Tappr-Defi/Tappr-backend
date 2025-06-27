@@ -95,11 +95,12 @@ public class AuthServiceImpl implements AuthService {
 
         user.setLoggedIn(true);
         user.setLastLoginAt(LocalDateTime.now());
+        user.setHasWallet(true);
+        user.setWallets(walletService.getWallets(user.getId()));
         userRepository.save(user);
 
         createWalletsIfNecessary(user);
         
-        // Create refresh token
         refreshTokenService.revokeAllUserTokens(user);
         refreshTokenService.createRefreshToken(user);
         

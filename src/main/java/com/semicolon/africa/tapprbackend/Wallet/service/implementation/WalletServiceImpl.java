@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -122,6 +123,13 @@ public class WalletServiceImpl implements WalletService {
                 .suiEquivalentOfFiat(sui.getBalance().multiply(exchangeRate))
                 .suiToNgnRate(exchangeRate)
                 .build();
+    }
+
+    @Override
+    public List<Wallet> getWallets(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        return walletRepository.findByUser(user);
     }
 
     @Override

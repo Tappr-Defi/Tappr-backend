@@ -50,7 +50,7 @@ public class Wallet {
     @Enumerated(EnumType.STRING)
     private WalletStatus status = WalletStatus.ACTIVE;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

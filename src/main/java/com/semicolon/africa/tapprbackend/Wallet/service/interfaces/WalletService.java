@@ -1,11 +1,13 @@
 package com.semicolon.africa.tapprbackend.Wallet.service.interfaces;
 
+import com.semicolon.africa.tapprbackend.Wallet.data.model.Wallet;
 import com.semicolon.africa.tapprbackend.Wallet.dtos.requests.CreateWalletRequest;
 import com.semicolon.africa.tapprbackend.Wallet.dtos.response.CreateWalletResponse;
 import com.semicolon.africa.tapprbackend.Wallet.dtos.response.WalletBalanceResponse;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public interface WalletService {
@@ -16,6 +18,8 @@ public interface WalletService {
 
     CreateWalletResponse createWallet(User user);
 
+    List<Wallet> getWallets(UUID userId);
+
     void depositFiat(UUID userId, BigDecimal amount);
 
     void withdrawFiat(UUID userId, BigDecimal amount);
@@ -25,4 +29,5 @@ public interface WalletService {
     void withdrawSui(UUID userId, BigDecimal amount);
 
     WalletBalanceResponse getUserWalletBalances(UUID userId);
+
 }
