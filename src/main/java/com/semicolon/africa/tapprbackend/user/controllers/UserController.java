@@ -55,6 +55,7 @@ public class UserController {
             profile.put("role", user.getRole());
             profile.put("kycVerified", user.isKycVerified());
             profile.put("createdAt", user.getCreatedAt());
+            profile.put("hasMerchantProfile", user.getMerchantProfile() != null);
 
             log.info("Profile retrieved for user: {}", email);
             return ResponseEntity.ok(profile);

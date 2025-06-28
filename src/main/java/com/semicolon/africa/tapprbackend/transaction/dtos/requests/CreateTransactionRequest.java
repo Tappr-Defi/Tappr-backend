@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 @Getter
 public class CreateTransactionRequest {
 
-    private String merchantId;
-
+//    private String merchantId;
+    private String accountNumber;
     private BigDecimal amount;
 
-    private String currency;
+//    private String currency;
 
 }
 

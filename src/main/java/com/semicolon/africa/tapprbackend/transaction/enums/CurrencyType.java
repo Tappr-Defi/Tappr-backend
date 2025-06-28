@@ -7,6 +7,6 @@ public enum CurrencyType {
     DOLLAR,
     EURO,
     POUND,
-    YEN;
+    YEN, KES, GHS, ZAR, EGP, DZD, MAD, TND, UGX, TZS, ETB, AOA, XAF, XOF, CDF, MWK, ZMW, ZWL, RWF, LSL, NAD, BWP, MZN, GMD, SLL, LRD, GNF;
 
 }

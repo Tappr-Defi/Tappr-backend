@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long> {
     Optional<ExchangeRate> findBySymbol(String symbol);
+    boolean existsBySymbol(String symbol);
 }

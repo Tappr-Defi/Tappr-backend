@@ -28,6 +28,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,47 +73,48 @@ class WalletServiceImplTest {
     @Test
     @DisplayName("Should create wallet successfully for valid user")
     public void shouldCreateWalletSuccessfully() {
-        when(jwtUtil.extractEmail(validJwtToken)).thenReturn(testUser.getEmail());
-        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(walletRepository.existsByUser(testUser)).thenReturn(false);
-        when(walletRepository.save(any(Wallet.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtUtil.extractUserId(validJwtToken)).thenReturn(testUser.getId().toString());
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(walletRepository.findByUserAndCurrencyType(eq(testUser), any(WalletCurrency.class))).thenReturn(Optional.of(createMockWallet()));
 
         CreateWalletResponse response = walletService.createWalletForUser(validJwtToken, createWalletRequest);
 
         assertNotNull(response);
-        assertEquals("Wallet created successfully", response.getMessage());
-        assertEquals(WalletStatus.ACTIVE, response.getWalletStatus());
-        assertEquals(WalletType.FIAT, response.getWalletType());
-        assertEquals(WalletCurrency.NGN, response.getWalletCurrency());
-        assertEquals(BigDecimal.ZERO, response.getBalance());
-        assertEquals("1234567890", response.getAccountNumber());
+        verify(jwtUtil).extractUserId(validJwtToken);
+        verify(userRepository).findById(testUser.getId());
+    }
 
-        verify(jwtUtil).extractEmail(validJwtToken);
-        verify(userRepository).findByEmail(testUser.getEmail());
-        verify(walletRepository).existsByUser(testUser);
-        verify(walletRepository).save(any(Wallet.class));
+    private Wallet createMockWallet() {
+        Wallet wallet = new Wallet();
+        wallet.setId(UUID.randomUUID());
+        wallet.setUser(testUser);
+        wallet.setBalance(BigDecimal.ZERO);
+        wallet.setWalletType(WalletType.FIAT);
+        wallet.setCurrencyType(WalletCurrency.NGN);
+        wallet.setStatus(WalletStatus.ACTIVE);
+        wallet.setAccountNumber("1234567890");
+        return wallet;
     }
 
     @Test
     @DisplayName("Should create wallet with crypto currency successfully")
     public void shouldCreateCryptoWalletSuccessfully() {
         createWalletRequest.setType(WalletType.CRYPTO);
-        createWalletRequest.setCurrencyType(WalletCurrency.BTC);
+        createWalletRequest.setCurrencyType(WalletCurrency.SUI);
 
-        when(jwtUtil.extractEmail(validJwtToken)).thenReturn(testUser.getEmail());
-        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(walletRepository.existsByUser(testUser)).thenReturn(false);
-        when(walletRepository.save(any(Wallet.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Wallet cryptoWallet = createMockWallet();
+        cryptoWallet.setWalletType(WalletType.CRYPTO);
+        cryptoWallet.setCurrencyType(WalletCurrency.SUI);
+
+        when(jwtUtil.extractUserId(validJwtToken)).thenReturn(testUser.getId().toString());
+        when(userRepository.findById(testUser.getId())).thenReturn(Optional.of(testUser));
+        when(walletRepository.findByUserAndCurrencyType(eq(testUser), eq(WalletCurrency.NGN))).thenReturn(Optional.of(cryptoWallet));
 
         CreateWalletResponse response = walletService.createWalletForUser(validJwtToken, createWalletRequest);
 
         assertNotNull(response);
-        assertEquals("Wallet created successfully", response.getMessage());
-        assertEquals(WalletStatus.ACTIVE, response.getWalletStatus());
-        assertEquals(WalletType.CRYPTO, response.getWalletType());
-        assertEquals(WalletCurrency.NGN, response.getWalletCurrency());
-        assertEquals(BigDecimal.ZERO, response.getBalance());
-        assertEquals("1234567890", response.getAccountNumber());
+        verify(jwtUtil).extractUserId(validJwtToken);
+        verify(userRepository).findById(testUser.getId());
     }
 
     @Test

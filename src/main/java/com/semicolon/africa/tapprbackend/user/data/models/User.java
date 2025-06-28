@@ -74,8 +74,7 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private LoyaltyWallet loyaltyWallet;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "merchant_profile_id", referencedColumnName = "id", nullable = true)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = true)
     private MerchantProfile merchantProfile;
 
     private LocalDateTime lastLoginAt;

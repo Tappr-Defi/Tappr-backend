@@ -16,4 +16,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByPhoneNumber(@NotEmpty(message = "phone number cannot be empty") @Pattern(regexp = "^\\+?[0-9\\s]{7,14}$",
             message = "Invalid phone number format") String phoneNumber);
+    User findUserByAccountNumber(String accountNumber);
 }
