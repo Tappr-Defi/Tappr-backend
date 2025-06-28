@@ -1,77 +1,89 @@
 package com.semicolon.africa.tapprbackend.Wallet.enums;
 
 
-import com.semicolon.africa.tapprbackend.transaction.enums.CurrencyType;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
+import com.semicolon.africa.tapprbackend.transaction.enums.WalletCurrency;
 
 public class CurrencyResolver {
 
-    public static CurrencyType resolveCurrencyFromCountry(String countryCode) {
-        if (countryCode == null || countryCode.trim().isEmpty()) return CurrencyType.USD;
+    public static WalletCurrency resolveCurrencyFromCountry(String countryCode) {
+        if (countryCode == null || countryCode.trim().isEmpty()) return WalletCurrency.USD;
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
-        switch (countryCode.toUpperCase()) {
-            // Major African countries
-            case "NG": return CurrencyType.NGN;  // Nigeria
-            case "KE": return CurrencyType.KES;    // Kenya
-            case "GH": return CurrencyType.GHS;    // Ghana
-            case "ZA": return CurrencyType.ZAR;    // South Africa
-            case "EG": return CurrencyType.EGP;    // Egypt
-            case "DZ": return CurrencyType.DZD;    // Algeria
-            case "MA": return CurrencyType.MAD;    // Morocco
-            case "TN": return CurrencyType.TND;    // Tunisia
-            case "UG": return CurrencyType.UGX;    // Uganda
-            case "TZ": return CurrencyType.TZS;    // Tanzania
-            case "ET": return CurrencyType.ETB;    // Ethiopia
-            case "AO": return CurrencyType.AOA;    // Angola
-            case "CM": return CurrencyType.XAF;    // Cameroon
-            case "CI": return CurrencyType.XOF;    // Ivory Coast
-            case "SN": return CurrencyType.XOF;    // Senegal
-            case "ML": return CurrencyType.XOF;    // Mali
-            case "NE": return CurrencyType.XOF;    // Niger
-            case "BF": return CurrencyType.XOF;    // Burkina Faso
-            case "TG": return CurrencyType.XOF;    // Togo
-            case "BJ": return CurrencyType.XOF;    // Benin
-            case "CF": return CurrencyType.XAF;    // Central African Republic
-            case "GA": return CurrencyType.XAF;    // Gabon
-            case "CG": return CurrencyType.XAF;    // Republic of the Congo
-            case "CD": return CurrencyType.CDF;    // DR Congo
-            case "MW": return CurrencyType.MWK;    // Malawi
-            case "ZM": return CurrencyType.ZMW;    // Zambia
-            case "ZW": return CurrencyType.ZWL;    // Zimbabwe
-            case "RW": return CurrencyType.RWF;    // Rwanda
-            case "LS": return CurrencyType.LSL;    // Lesotho
-            case "NA": return CurrencyType.NAD;    // Namibia
-            case "BW": return CurrencyType.BWP;    // Botswana
-            case "MZ": return CurrencyType.MZN;    // Mozambique
-            case "GM": return CurrencyType.GMD;    // Gambia
-            case "SL": return CurrencyType.SLL;    // Sierra Leone
-            case "LR": return CurrencyType.LRD;    // Liberia
-            case "GN": return CurrencyType.GNF;    // Guinea
-            case "GW": return CurrencyType.XOF;    // Guinea-Bissau
-            case "MR": return CurrencyType.MRU;    // Mauritania
-            case "SC": return CurrencyType.SCR;    // Seychelles
-            case "CV": return CurrencyType.CVE;    // Cape Verde
-            case "DJ": return CurrencyType.DJF;    // Djibouti
-            case "ER": return CurrencyType.ERN;    // Eritrea
-            case "KM": return CurrencyType.KMF;    // Comoros
-            case "ST": return CurrencyType.STN;    // Sao Tome and Principe
-            case "SZ": return CurrencyType.SZL;    // Eswatini
-            case "SO": return CurrencyType.SOS;    // Somalia
-            case "SS": return CurrencyType.SSP;    // South Sudan
-            case "EH": return CurrencyType.MAD;    // Western Sahara (Moroccan Dirham)
+        try {
+            Phonenumber.PhoneNumber parsedNumber = phoneNumberUtil.parse(countryCode, "");
+            String regionCode = phoneNumberUtil.getRegionCodeForNumber(parsedNumber);
 
-            // Major global countries
-            case "US": return CurrencyType.USD;    // United States
-            case "GB": return CurrencyType.GBP;    // United Kingdom
-            case "EU": return CurrencyType.EUR;    // European Union
-            case "IN": return CurrencyType.INR;    // India
-            case "JP": return CurrencyType.JPY;    // Japan
-            case "CN": return CurrencyType.CNY;    // China
-            case "AE": return CurrencyType.AED;    // UAE
-            case "CA": return CurrencyType.CAD;    // Canada
-            case "AU": return CurrencyType.AUD;    // Australia
-            case "BR": return CurrencyType.BRL;    // Brazil
 
-            default: return CurrencyType.NAIRA; // fallback currency
+            return switch (regionCode) {
+                // Major African countries
+                case "NG" -> WalletCurrency.NGN;  // Nigeria
+                case "KE" -> WalletCurrency.KES;    // Kenya
+                case "GH" -> WalletCurrency.GHS;    // Ghana
+                case "ZA" -> WalletCurrency.ZAR;    // South Africa
+                case "EG" -> WalletCurrency.EGP;    // Egypt
+                case "DZ" -> WalletCurrency.DZD;    // Algeria
+                case "MA" -> WalletCurrency.MAD;    // Morocco
+                case "TN" -> WalletCurrency.TND;    // Tunisia
+                case "UG" -> WalletCurrency.UGX;    // Uganda
+                case "TZ" -> WalletCurrency.TZS;    // Tanzania
+                case "ET" -> WalletCurrency.ETB;    // Ethiopia
+                case "AO" -> WalletCurrency.AOA;    // Angola
+                case "CM" -> WalletCurrency.XAF;    // Cameroon
+                case "CI" -> WalletCurrency.XOF;    // Ivory Coast
+                case "SN" -> WalletCurrency.XOF;    // Senegal
+                case "ML" -> WalletCurrency.XOF;    // Mali
+                case "NE" -> WalletCurrency.XOF;    // Niger
+                case "BF" -> WalletCurrency.XOF;    // Burkina Faso
+                case "TG" -> WalletCurrency.XOF;    // Togo
+                case "BJ" -> WalletCurrency.XOF;    // Benin
+                case "CF" -> WalletCurrency.XAF;    // Central African Republic
+                case "GA" -> WalletCurrency.XAF;    // Gabon
+                case "CG" -> WalletCurrency.XAF;    // Republic of the Congo
+                case "CD" -> WalletCurrency.CDF;    // DR Congo
+                case "MW" -> WalletCurrency.MWK;    // Malawi
+                case "ZM" -> WalletCurrency.ZMW;    // Zambia
+                case "ZW" -> WalletCurrency.ZWL;    // Zimbabwe
+                case "RW" -> WalletCurrency.RWF;    // Rwanda
+                case "LS" -> WalletCurrency.LSL;    // Lesotho
+                case "NA" -> WalletCurrency.NAD;    // Namibia
+                case "BW" -> WalletCurrency.BWP;    // Botswana
+                case "MZ" -> WalletCurrency.MZN;    // Mozambique
+                case "GM" -> WalletCurrency.GMD;    // Gambia
+                case "SL" -> WalletCurrency.SLL;    // Sierra Leone
+                case "LR" -> WalletCurrency.LRD;    // Liberia
+                case "GN" -> WalletCurrency.GNF;    // Guinea
+                case "GW" -> WalletCurrency.XOF;    // Guinea-Bissau
+                case "MR" -> WalletCurrency.MRU;    // Mauritania
+                case "SC" -> WalletCurrency.SCR;    // Seychelles
+                case "CV" -> WalletCurrency.CVE;    // Cape Verde
+                case "DJ" -> WalletCurrency.DJF;    // Djibouti
+                case "ER" -> WalletCurrency.ERN;    // Eritrea
+                case "KM" -> WalletCurrency.KMF;    // Comoros
+                case "ST" -> WalletCurrency.STN;    // Sao Tome and Principe
+                case "SZ" -> WalletCurrency.SZL;    // Eswatini
+                case "SO" -> WalletCurrency.SOS;    // Somalia
+                case "SS" -> WalletCurrency.SSP;    // South Sudan
+                case "EH" -> WalletCurrency.MAD;    // Western Sahara (Moroccan Dirham)
+
+                // Major global countries
+                case "US" -> WalletCurrency.USD;    // United States
+                case "GB" -> WalletCurrency.GBP;    // United Kingdom
+                case "EU" -> WalletCurrency.EUR;    // European Union
+                case "IN" -> WalletCurrency.INR;    // India
+                case "JP" -> WalletCurrency.JPY;    // Japan
+                case "CN" -> WalletCurrency.CNY;    // China
+                case "AE" -> WalletCurrency.AED;    // UAE
+                case "CA" -> WalletCurrency.CAD;    // Canada
+                case "AU" -> WalletCurrency.AUD;    // Australia
+                case "BR" -> WalletCurrency.BRL;    // Brazil
+
+                default -> WalletCurrency.SUI; // fallback currency
+            };
+        } catch (NumberParseException e) {
+            return WalletCurrency.SUI; // fallback currency
         }
     }
 }
