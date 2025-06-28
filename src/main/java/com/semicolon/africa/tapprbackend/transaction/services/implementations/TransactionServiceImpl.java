@@ -74,7 +74,7 @@ public class TransactionServiceImpl implements TransactionService {
         // Get sender's fiat wallet (users always spend from fiat wallet - Naira)
         Wallet senderFiatWallet = walletRepository.findByUserAndCurrencyType(sender, WalletCurrency.NGN)
                 .orElseThrow(() -> new InvalidRequestException("Sender fiat wallet not found"));
-        
+
         // Get sender's crypto wallet (for Sui execution)
         Wallet senderCryptoWallet = walletRepository.findByUserAndCurrencyType(sender, WalletCurrency.SUI)
                 .orElseThrow(() -> new InvalidRequestException("Sender crypto wallet not found"));
@@ -95,12 +95,12 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction transaction = new Transaction();
         transaction.setTransactionRef(UUID.randomUUID().toString());
         transaction.setMerchant(receiver);
-        
+
         // Store sender's fiat account number (what user sees)
         transaction.setSenderAccountNumber(senderFiatWallet.getAccountNumber());
         transaction.setAmount(request.getAmount());
         transaction.setWalletCurrency(targetCurrency);
-        
+
         // Store receiver's identifier (account number or wallet address)
         transaction.setReceiversAccountNumber(request.getAccountNumber());
         transaction.setInitiatedAt(LocalDateTime.now());
@@ -116,9 +116,54 @@ public class TransactionServiceImpl implements TransactionService {
 
     private WalletCurrency resolveCurrencyFromInput(String senderPhone, String input) {
         if (input.length() == 10 && input.matches("\\d+")) {
-            return CurrencyResolver.resolveCurrencyFromCountry(senderPhone);
+            com.semicolon.africa.tapprbackend.transaction.enums.WalletCurrency transactionCurrency =
+                CurrencyResolver.resolveCurrencyFromCountry(senderPhone);
+            return convertToWalletCurrency(transactionCurrency);
         }
         return WalletCurrency.SUI;
+    }
+
+    /**
+     * Converts transaction package WalletCurrency to Wallet package WalletCurrency
+     */
+    private WalletCurrency convertToWalletCurrency(com.semicolon.africa.tapprbackend.transaction.enums.WalletCurrency transactionCurrency) {
+        return switch (transactionCurrency) {
+            // Direct mappings for currencies that exist in both enums
+            case NGN -> WalletCurrency.NGN;
+            case KES -> WalletCurrency.KES;
+            case GHS -> WalletCurrency.GHS;
+            case ZAR -> WalletCurrency.ZAR;
+            case EGP -> WalletCurrency.EGP;
+            case DZD -> WalletCurrency.DZD;
+            case MAD -> WalletCurrency.MAD;
+            case UGX -> WalletCurrency.UGX;
+            case TZS -> WalletCurrency.TZS;
+            case ETB -> WalletCurrency.ETB;
+            case XAF -> WalletCurrency.XAF;
+            case XOF -> WalletCurrency.XOF;
+            case RWF -> WalletCurrency.RWF;
+            case BWP -> WalletCurrency.BWP;
+            case MZN -> WalletCurrency.MZN;
+            case USD -> WalletCurrency.USD;
+            case GBP -> WalletCurrency.GBP;
+            case EUR -> WalletCurrency.EUR;
+            case INR -> WalletCurrency.INR;
+            case JPY -> WalletCurrency.JPY;
+            case AED -> WalletCurrency.AED;
+            case SUI -> WalletCurrency.SUI;
+
+            // Mappings for currencies that have different names or don't exist in Wallet enum
+            case DOLLAR -> WalletCurrency.USD;
+            case EURO -> WalletCurrency.EUR;
+            case POUND -> WalletCurrency.GBP;
+            case YEN -> WalletCurrency.JPY;
+
+            // For currencies that don't exist in Wallet enum, map to closest equivalent or fallback
+            case TND, AOA, CDF, MWK, ZMW, ZWL, LSL, NAD, GMD, SLL, LRD, GNF, MRU,
+                 SCR, CVE, DJF, ERN, KMF, STN, SZL, SOS, SSP, CNY, AUD, CAD, BRL -> WalletCurrency.USD;
+
+            default -> WalletCurrency.SUI; // fallback
+        };
     }
 
     private CreateTransactionResponse mapToResponse(Transaction transaction) {
@@ -139,7 +184,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         return response;
     }
-    
+
     /**
      * Finds receiver by account number (for fiat) or wallet address (for crypto)
      */
@@ -154,7 +199,7 @@ public class TransactionServiceImpl implements TransactionService {
                     .orElse(null);
         }
     }
-    
+
     /**
      * Helper method to get all necessary wallet information for a transaction
      * This demonstrates how to retrieve both fiat and crypto wallet details
@@ -163,18 +208,18 @@ public class TransactionServiceImpl implements TransactionService {
         // Get sender's fiat wallet (what user spends from)
         Wallet senderFiatWallet = walletRepository.findByUserAndCurrencyType(sender, WalletCurrency.NGN)
                 .orElseThrow(() -> new InvalidRequestException("Sender fiat wallet not found"));
-        
+
         // Get sender's crypto wallet (for Sui execution)
         Wallet senderCryptoWallet = walletRepository.findByUserAndCurrencyType(sender, WalletCurrency.SUI)
                 .orElseThrow(() -> new InvalidRequestException("Sender crypto wallet not found"));
-        
+
         // Determine receiver's wallet type based on identifier
         WalletCurrency receiverCurrency = receiverIdentifier.length() == 10 ? WalletCurrency.NGN : WalletCurrency.SUI;
-        
+
         // Get receiver's target wallet
         Wallet receiverWallet = walletRepository.findByUserAndCurrencyType(receiver, receiverCurrency)
                 .orElseThrow(() -> new InvalidRequestException("Receiver wallet not found"));
-        
+
         return new TransactionWalletInfo(
             senderFiatWallet.getAccountNumber(),
             senderFiatWallet.getWalletAddress(),

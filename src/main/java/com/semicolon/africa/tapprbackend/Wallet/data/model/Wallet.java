@@ -30,6 +30,9 @@ public class Wallet {
     @Column(name = "account_number", unique = true)
     private String accountNumber; // for fiat wallets only
 
+    @Column(name = "wallet_address", unique = true)
+    private String walletAddress; // for crypto wallets only
+
     @Column(name = "balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
@@ -40,9 +43,6 @@ public class Wallet {
     @Enumerated(EnumType.STRING)
     @Column(name = "currency_type", nullable = false)
     private WalletCurrency currencyType; // NGN, SUI, USDT, etc.
-
-    @Column(name = "wallet_address", unique = true)
-    private String walletAddress; // for crypto wallets only
 
     @Column(name = "token_symbol")
     private String tokenSymbol; // e.g., "SUI" for crypto, optional
