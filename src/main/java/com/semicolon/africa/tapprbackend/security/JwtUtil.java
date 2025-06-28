@@ -36,6 +36,8 @@ public class JwtUtil {
                 .setSubject(email)
                 .claim("userId", userId.toString())
                 .claim("role", role.name())
+                .claim("jti", UUID.randomUUID().toString())
+                .claim("timestamp", System.nanoTime())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -86,6 +88,8 @@ public class JwtUtil {
                 .claim("userId", userId.toString())
                 .claim("role", role.name())
                 .claim("type", "refresh")
+                .claim("jti", UUID.randomUUID().toString()) // Add unique identifier
+                .claim("timestamp", System.nanoTime()) // Add nanosecond timestamp for uniqueness
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)

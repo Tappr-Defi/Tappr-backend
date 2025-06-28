@@ -10,7 +10,6 @@ public class LoginResponseTest {
 
     @Test
     public void testLoginResponseConstructor() {
-        // Test that LoginResponse constructor works with all required parameters
         WalletBalanceResponse walletBalances = WalletBalanceResponse.builder()
                 .fiatBalance(java.math.BigDecimal.valueOf(1000))
                 .fiatCurrency("NGN")
@@ -48,7 +47,6 @@ public class LoginResponseTest {
 
     @Test
     public void testLoginResponseConstructorWithNullWalletBalances() {
-        // Test that LoginResponse constructor works with null wallet balances
         LoginResponse loginResponse = new LoginResponse(
                 "Login successful",
                 "access-token-123",

@@ -85,9 +85,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     @Override
     public LoginResponse login(LoginRequest request) {
+        // Validate email first
+        if (isNullOrEmpty(request.getEmail())) {
+            throw new UserNotFoundException("Email is required");
+        }
+        
         String email = request.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User with that email doesn't exist"));
+
+        if (request.getPassword() == null) {
+            throw new IllegalArgumentException("Password is required");
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Incorrect credentials");
@@ -101,7 +110,6 @@ public class AuthServiceImpl implements AuthService {
 
         createWalletsIfNecessary(user);
         
-        refreshTokenService.revokeAllUserTokens(user);
         refreshTokenService.createRefreshToken(user);
         
         return userService.generateLoginResponse(user, "Logged in successfully");
@@ -122,9 +130,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LogoutUserResponse logOut(LogoutRequest request) {
+        // Validate email first
+        if (isNullOrEmpty(request.getEmail())) {
+            throw new UserNotFoundException("Email is required");
+        }
+        
         String email = request.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User with that email doesn't exist"));
 
         if (!user.isLoggedIn()) {
             throw new IllegalArgumentException("User is already logged out");
@@ -153,8 +166,10 @@ public class AuthServiceImpl implements AuthService {
         if (isNullOrEmpty(request.getPassword())) throw new IllegalArgumentException("Password is required");
 
         if (request.getPassword().length() < 8)
-            throw new PasswordLenghtMismatchException("Password must be at least 8 characters");
-        if (!request.getEmail().matches("^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
+            throw new PasswordLenghtMismatchException("Password must be between 8 and 20 characters");
+        // Trim email before validation
+        String trimmedEmail = request.getEmail() != null ? request.getEmail().trim() : "";
+        if (!trimmedEmail.matches("^[\\w+.'\\-]+@[\\w.\\-]+\\.[a-zA-Z]{2,}$"))
             throw new IllegalArgumentException("Invalid email format");
         if (request.getPassword().contains(" "))
             throw new IllegalArgumentException("Password must not contain spaces");

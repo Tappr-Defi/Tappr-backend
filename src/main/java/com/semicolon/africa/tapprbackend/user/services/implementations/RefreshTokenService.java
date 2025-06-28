@@ -6,7 +6,10 @@ import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.data.repositories.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -18,12 +21,16 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public RefreshTokenService(RefreshTokenRepository repo, JwtUtil jwtUtil) {
         this.refreshTokenRepository = repo;
         this.jwtUtil = jwtUtil;
     }
 
+    @Transactional
     public RefreshToken createRefreshToken(User user) {
         RefreshToken token = new RefreshToken();
         token.setUser(user);
@@ -48,8 +55,10 @@ public class RefreshTokenService {
         return token;
     }
 
+    @Transactional
     public void revokeAllUserTokens(User user) {
-        refreshTokenRepository.deleteByUser(user); // or set revoked = true
+        refreshTokenRepository.deleteByUserId(user.getId());
+        entityManager.flush(); // Force the delete to be executed immediately
     }
 
     public Optional<RefreshToken> findByToken(String refreshTokenStr) {
