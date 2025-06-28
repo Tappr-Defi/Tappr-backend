@@ -14,11 +14,12 @@ public class CreateTransactionResponse {
 
     private String transactionId;
     private String transactionRef;
-    private String merchantName; // from User
+    private String merchantName;
     private BigDecimal amount;
     private String currency;
     private TransactionStatus status;
     private LocalDateTime initiatedAt;
     private LocalDateTime completedAt;
-    private String receiptUrl; // or receipt ID if applicable
+    private String merchantReceiptDownloadUrl;
+    private String regularReceiptDownloadUrl;
 }

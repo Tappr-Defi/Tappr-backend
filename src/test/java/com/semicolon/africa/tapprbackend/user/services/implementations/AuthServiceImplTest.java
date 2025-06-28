@@ -3,6 +3,9 @@ package com.semicolon.africa.tapprbackend.user.services.implementations;
 import com.semicolon.africa.tapprbackend.security.JwtUtil;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
+import com.semicolon.africa.tapprbackend.user.data.repositories.RefreshTokenRepository;
+import com.semicolon.africa.tapprbackend.Wallet.data.repositories.WalletRepository;
+import com.semicolon.africa.tapprbackend.transaction.data.repositories.TransactionRepository;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.LoginRequest;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.LogoutRequest;
@@ -18,14 +21,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.annotation.Rollback;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
+@Transactional
+@Rollback
 public class AuthServiceImplTest {
 
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+    
+    @Autowired
+    private WalletRepository walletRepository;
+    
+    @Autowired
+    private TransactionRepository transactionRepository;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -41,7 +59,6 @@ public class AuthServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        userRepository.deleteAll();
         String rawPassword = "securePassword123";
 
         createNewUserRequest = new CreateNewUserRequest();
@@ -100,14 +117,21 @@ public class AuthServiceImplTest {
         assertFalse(loginResponse.getAccessToken().isEmpty());
     }
 
-//    @Test
-//    public void testSignUpFailsWithInvalidSpecialCharactersInName() {
-//        createNewUserRequest.setFirstName("John@Daniel");
-//
-//        assertThrows(IllegalArgumentException.class, () -> {
-//            authenticationService.createNewUser(createNewUserRequest);
-//        });
-//    }
+    @Test
+    public void testMultipleSuccessiveLogins() throws InterruptedException {
+        authenticationService.createNewUser(createNewUserRequest);
+        
+        LoginResponse firstLogin = authenticationService.login(loginRequest);
+        assertTrue(firstLogin.isLoggedIn());
+        
+        // Add a small delay to ensure different timestamps
+        Thread.sleep(10);
+        
+        LoginResponse secondLogin = authenticationService.login(loginRequest);
+        assertTrue(secondLogin.isLoggedIn());
+        
+        assertNotEquals(firstLogin.getAccessToken(), secondLogin.getAccessToken());
+    }
 
     @Test
     public void testSignUpFailsWhenUserAlreadyExists() {
@@ -559,7 +583,6 @@ public class AuthServiceImplTest {
         User userAfterLogin = userRepository.findByEmail(createNewUserRequest.getEmail().toLowerCase()).get();
         assertTrue(userAfterLogin.isLoggedIn());
     }
-
     @Test
     public void testLoginWithEmailContainingSpaces() {
         authenticationService.createNewUser(createNewUserRequest);
@@ -571,19 +594,19 @@ public class AuthServiceImplTest {
     }
 
     @Test
-    public void testMultipleSuccessiveLogins() {
-        authenticationService.createNewUser(createNewUserRequest);
+    public void testSignUpTrimsWhitespaceFromFields() {
+        createNewUserRequest.setFirstName("  John  ");
+        createNewUserRequest.setLastName("  Doe  ");
+        createNewUserRequest.setEmail("  john.doe@example.com  ");
         
-        LoginResponse firstLogin = authenticationService.login(loginRequest);
-        assertTrue(firstLogin.isLoggedIn());
+        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
+        assertNotNull(response);
         
-        LoginResponse secondLogin = authenticationService.login(loginRequest);
-        assertTrue(secondLogin.isLoggedIn());
-        
-        assertNotEquals(firstLogin.getAccessToken(), secondLogin.getAccessToken());
+        User savedUser = userRepository.findByEmail("john.doe@example.com").get();
+        assertEquals("John", savedUser.getFirstName());
+        assertEquals("Doe", savedUser.getLastName());
+        assertEquals("john.doe@example.com", savedUser.getEmail());
     }
-
-    // ========== Additional Logout Test Scenarios ==========
 
     @Test
     public void testLogoutFailsWithNonExistentUser() {
@@ -725,21 +748,6 @@ public class AuthServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> {
             authenticationService.createNewUser(createNewUserRequest);
         });
-    }
-
-    @Test
-    public void testSignUpTrimsWhitespaceFromFields() {
-        createNewUserRequest.setFirstName("  John  ");
-        createNewUserRequest.setLastName("  Doe  ");
-        createNewUserRequest.setEmail("  john.doe@example.com  ");
-        
-        CreateNewUserResponse response = authenticationService.createNewUser(createNewUserRequest);
-        assertNotNull(response);
-        
-        User savedUser = userRepository.findByEmail("john.doe@example.com").get();
-        assertEquals("John", savedUser.getFirstName());
-        assertEquals("Doe", savedUser.getLastName());
-        assertEquals("john.doe@example.com", savedUser.getEmail());
     }
 
     @Test

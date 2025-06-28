@@ -54,10 +54,10 @@ public class User {
     private boolean isKycVerified = false;
     private boolean isTier2Verified = false;
     private boolean isLoggedIn = false;
+    private boolean hasWallet = false;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "wallet_id", referencedColumnName = "id", nullable = true)
-    private Wallet wallet;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Wallet> wallets;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -74,8 +74,9 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private LoyaltyWallet loyaltyWallet;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, optional = true)
     private MerchantProfile merchantProfile;
+
     private LocalDateTime lastLoginAt;
 
 

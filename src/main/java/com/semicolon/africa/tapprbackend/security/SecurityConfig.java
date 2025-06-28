@@ -29,16 +29,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/transactions/**").permitAll()
+                        .requestMatchers("/api/v1/rates/**").permitAll() // Allow access to rates endpoint
+                        .requestMatchers("/api/v1/user/**").authenticated() // User endpoints require authentication
+                        .requestMatchers("/api/v1/merchant/activate").authenticated() // Allow any authenticated user to activate merchant profile
+                        .requestMatchers("/api/v1/merchant/status").authenticated() // Allow any authenticated user to check merchant status
 //                        .requestMatchers("/api/initiate-transaction/**").permitAll()
-                        // Swagger endpoints
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/swagger-ui.html").permitAll()
-                        .requestMatchers("/api-docs/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/swagger-resources/**").permitAll()
-                        .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/merchant/**").hasRole("MERCHANT")
+                        .requestMatchers("/api/v1/merchant/**").hasAnyRole("MERCHANT", "ADMIN") // Other merchant endpoints require MERCHANT role
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);

@@ -12,12 +12,7 @@ import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
 import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
 import com.semicolon.africa.tapprbackend.user.services.implementations.RefreshTokenService;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,37 +29,12 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Authentication", description = "Authentication and user management endpoints")
 public class AuthController {
 
     private final AuthService authService;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
 
-    @Operation(
-            summary = "Register a new user",
-            description = "Creates a new user account with the provided information"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "User registered successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CreateNewUserResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid input data or user already exists",
-                    content = @Content(mediaType = "application/json")
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Internal server error",
-                    content = @Content(mediaType = "application/json")
-            )
-    })
     @PostMapping("/register")
     public ResponseEntity<CreateNewUserResponse> register(
             @Valid @RequestBody CreateNewUserRequest request
@@ -89,30 +59,6 @@ public class AuthController {
         }
     }
 
-    @Operation(
-            summary = "User login",
-            description = "Authenticates a user and returns JWT tokens"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Login successful",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = LoginResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid credentials",
-                    content = @Content(mediaType = "application/json")
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
-                    content = @Content(mediaType = "application/json")
-            )
-    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -129,25 +75,6 @@ public class AuthController {
         }
     }
 
-    @Operation(
-            summary = "User logout",
-            description = "Logs out a user and invalidates their session"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Logout successful",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = LogoutUserResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "User already logged out or invalid request",
-                    content = @Content(mediaType = "application/json")
-            )
-    })
     @PostMapping("/logout")
     public ResponseEntity<LogoutUserResponse> logout(@Valid @RequestBody LogoutRequest request) {
         try {
@@ -164,22 +91,6 @@ public class AuthController {
         }
     }
 
-    @Operation(
-            summary = "Refresh access token",
-            description = "Generates a new access token using a valid refresh token"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Token refreshed successfully",
-                    content = @Content(mediaType = "application/json")
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid or expired refresh token",
-                    content = @Content(mediaType = "application/json")
-            )
-    })
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
         String token = request.get("refreshToken");
@@ -194,7 +105,7 @@ public class AuthController {
         refreshTokenService.revokeAllUserTokens(user);
         RefreshToken newToken = refreshTokenService.createRefreshToken(user);
 
-        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        String newAccessToken = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", newAccessToken,

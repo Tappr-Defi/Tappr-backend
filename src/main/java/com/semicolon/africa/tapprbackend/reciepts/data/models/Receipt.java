@@ -1,5 +1,6 @@
 package com.semicolon.africa.tapprbackend.reciepts.data.models;
 
+import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
 import com.semicolon.africa.tapprbackend.transaction.data.models.Transaction;
 import lombok.Getter;
@@ -7,7 +8,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -18,31 +18,31 @@ public class Receipt {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transaction_id", nullable = false)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "transaction_id", referencedColumnName = "id", nullable = true)
     private Transaction transaction;
 
-    @Column(name = "sender_name")
-    private String senderName;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "sender_id", referencedColumnName = "id", nullable = true)
+    private User senderDetails;
 
-    @Column(name = "receiver_name")
-    private String receiverName;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "recipient_id", referencedColumnName = "id", nullable = true)
+    private User recipientDetails;
 
     @Column(name = "blockchain_hash")
     private String blockchainHash;
-    
-    @Column(name = "receipt_url", nullable = false)
-    private String receiptUrl; // IPFS/Walrus link or CDN
+
+    @Column(name = "merchant_receipt_url", nullable = false)
+    private String merchantReceiptDownloadUrl; // IPFS/Walrus link or CDN
+
+    @Column(name = "regular_receipt_url", nullable = false)
+    private String regularReceiptDownloadUrl; // IPFS/Walrus link or CDN
 
     @CreationTimestamp
     @Column(name = "issued_at", nullable = false)
     private LocalDateTime issuedAt;
 
-    public String getDownloadUrl() {
-        return "";
-    }
+    private boolean isMerchant;
 
-    public void setDownloadUrl(String url) {
-
-    }
 }

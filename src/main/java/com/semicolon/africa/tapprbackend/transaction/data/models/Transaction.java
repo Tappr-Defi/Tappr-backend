@@ -1,7 +1,7 @@
 package com.semicolon.africa.tapprbackend.transaction.data.models;
 
+import com.semicolon.africa.tapprbackend.Wallet.enums.WalletCurrency;
 import com.semicolon.africa.tapprbackend.reciepts.data.models.Receipt;
-import com.semicolon.africa.tapprbackend.transaction.enums.CurrencyType;
 import com.semicolon.africa.tapprbackend.transaction.enums.TransactionStatus;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
@@ -24,6 +24,18 @@ public class Transaction {
     @Column(name = "transaction_ref", nullable = false, unique = true)
     private String transactionRef;
 
+    @Column(name = "sender_account_number", nullable = false, unique = true)
+    private String senderAccountNumber;
+
+    @Column(name = "receivers_account_number", nullable = false, unique = true)
+    private String receiversAccountNumber;
+
+    @Column(name = "senders_id", nullable = false, unique = true)
+    private String senderId;
+
+    @Column(name = "receivers_id", nullable = false, unique = true)
+    private String receiversId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id", nullable = false)
     private User merchant;
@@ -33,11 +45,13 @@ public class Transaction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 3)
-    private CurrencyType currency = CurrencyType.NGN;
+    private WalletCurrency walletCurrency;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionStatus status;
+
+    private boolean isInitiated;
 
     @CreationTimestamp
     @Column(name = "initiated_at", nullable = false)

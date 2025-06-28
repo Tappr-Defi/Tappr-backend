@@ -4,6 +4,7 @@ import com.semicolon.africa.tapprbackend.security.JwtUtil;
 import com.semicolon.africa.tapprbackend.user.data.models.User;
 import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
 import com.semicolon.africa.tapprbackend.tapprException.TapprException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -53,6 +55,7 @@ public class UserController {
             profile.put("role", user.getRole());
             profile.put("kycVerified", user.isKycVerified());
             profile.put("createdAt", user.getCreatedAt());
+            profile.put("hasMerchantProfile", user.getMerchantProfile() != null);
 
             log.info("Profile retrieved for user: {}", email);
             return ResponseEntity.ok(profile);
@@ -79,10 +82,11 @@ public class UserController {
             }
 
             String email = jwtUtil.extractEmail(token);
+            String userId = jwtUtil.extractUserId(token);
             String role = jwtUtil.extractRole(token);
             
-            // Generate new access token
-            String newAccessToken = jwtUtil.generateToken(email, 
+            String newAccessToken = jwtUtil.generateToken(email,
+                UUID.fromString(userId),
                 com.semicolon.africa.tapprbackend.user.enums.Role.valueOf(role));
 
             Map<String, String> response = new HashMap<>();

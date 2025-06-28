@@ -1,6 +1,8 @@
 package com.semicolon.africa.tapprbackend.security;
 
 import com.semicolon.africa.tapprbackend.user.enums.Role;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -9,12 +11,16 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 
 
 
 @Component
 public class JwtUtil {
+
+    @Value("${jwt.expiration}")
+    private long jwtExpirationMs;
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
@@ -25,13 +31,13 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
-
-    public String generateToken(String email, Role role) {
+    public String generateToken(String email, UUID userId, Role role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("userId", userId.toString())
                 .claim("role", role.name())
+                .claim("jti", UUID.randomUUID().toString())
+                .claim("timestamp", System.nanoTime())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -52,6 +58,16 @@ public class JwtUtil {
                 .getSubject();
     }
 
+    public String extractUserId(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", String.class);
+    }
+
+
     public String extractRole(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
@@ -61,14 +77,19 @@ public class JwtUtil {
                 .get("role", String.class);
     }
 
-    public String generateRefreshToken(String email, Role role) {
-//        long refreshExpirationMs = jwtExpirationMs * 12;
 
+    public String extractTokenType(String token) {
+        return parseClaims(token).get("type", String.class);
+    }
 
+    public String generateRefreshToken(String email,UUID userId, Role role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("userId", userId.toString())
                 .claim("role", role.name())
                 .claim("type", "refresh")
+                .claim("jti", UUID.randomUUID().toString()) // Add unique identifier
+                .claim("timestamp", System.nanoTime()) // Add nanosecond timestamp for uniqueness
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -76,7 +97,21 @@ public class JwtUtil {
     }
 
 
+
     public boolean validateRefreshToken(String token) {
-        return false;
+        try {
+            Claims claims = parseClaims(token);
+            return "refresh".equals(claims.get("type", String.class));
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
