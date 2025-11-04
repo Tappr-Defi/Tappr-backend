@@ -10,4 +10,5 @@ public class CreateNewUserResponse {
     private String userId;
     private String email;
     private String phoneNumber;
+    private String accessToken;
 }

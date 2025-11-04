@@ -24,11 +24,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
-        // Find the user (merchant) by ID
         User merchant = userRepository.findById(request.getMerchantId())
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
 
-        // Create and populate the transaction
         Transaction transaction = new Transaction();
         transaction.setTransactionRef(UUID.randomUUID().toString());
         transaction.setMerchant(merchant);
@@ -40,11 +38,8 @@ public class TransactionServiceImpl implements TransactionService {
                         : TransactionStatus.PENDING
         );
         transaction.setInitiatedAt(LocalDateTime.now());
-
-        // Save to DB
         Transaction savedTransaction = transactionRepository.save(transaction);
 
-        // Map and return response
         return mapToResponse(savedTransaction);
     }
 
