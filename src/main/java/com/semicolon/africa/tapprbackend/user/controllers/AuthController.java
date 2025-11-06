@@ -1,54 +1,86 @@
-//package com.semicolon.africa.tapprbackend.user.controllers;
-//
-//import com.semicolon.africa.tapprbackend.security.JwtUtil;
-//import com.semicolon.africa.tapprbackend.user.data.models.User;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.security.crypto.password.PasswordEncoder;
-//import org.springframework.web.bind.annotation.PostMapping;
-//import org.springframework.web.bind.annotation.RequestBody;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RestController;
-//
-//@RestController
-//@RequestMapping("/api/auth")
-//public class AuthController {
-//
-//    private final UserRepository userRepository;
-//    private final PasswordEncoder passwordEncoder;
-//    private final JwtUtil jwtUtil;
-//
-//    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-//        this.userRepository = userRepository;
-//        this.passwordEncoder = passwordEncoder;
-//        this.jwtUtil = jwtUtil;
-//    }
-//
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-//        User user = userRepository.findByEmail(request.getEmail())
-//                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-//
-//        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-//            throw new RuntimeException("Invalid credentials");
-//        }
-//
-//        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
-//        return ResponseEntity.ok(new AuthResponse(token));
-//    }
-//
-//    @PostMapping("/register")
-//    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-//        if (userRepository.existsByEmail(request.getEmail())) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already in use");
-//        }
-//
-//        User user = new User();
-//        user.setEmail(request.getEmail());
-//        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-//        user.setRole(Role.MERCHANT);
-//        userRepository.save(user);
-//
-//        return ResponseEntity.ok("User registered");
-//    }
-//}
-//
+package com.semicolon.africa.tapprbackend.user.controllers;
+
+import com.semicolon.africa.tapprbackend.general.dtos.ApiResponse;
+import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
+import com.semicolon.africa.tapprbackend.user.dtos.requests.LoginRequest;
+import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserResponse;
+import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
+import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
+import com.semicolon.africa.tapprbackend.user.services.interfaces.AuthService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    // 🔹 Register a new user
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<CreateNewUserResponse>> register(@Valid @RequestBody CreateNewUserRequest request) {
+        ApiResponse<CreateNewUserResponse> response = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // 🔹 Verify email and login in one step
+    @PostMapping("/verify-email-login")
+    public ResponseEntity<ApiResponse<LoginResponse>> verifyEmailAndLogin(
+            @RequestParam String email,
+            @RequestParam String otp) {
+        ApiResponse<LoginResponse> response = authService.verifyEmailAndLogin(email, otp);
+        return ResponseEntity.ok(response);
+    }
+
+
+    // 🔹 Resend verification token
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<String>> resendVerification(@RequestParam String email) {
+        ApiResponse<String> response = authService.resendVerificationOtp(email);
+        return ResponseEntity.ok(response);
+    }
+
+    // 🔹 Login user (email or phone)
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        ApiResponse<LoginResponse> response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // 🔹 Refresh JWT token
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponse>> refresh(@RequestParam("refreshToken") String refreshToken) {
+        ApiResponse<LoginResponse> response = authService.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(response);
+    }
+
+    // 🔹 Logout user
+
+    @PostMapping("/logout")
+    public ApiResponse<LogoutUserResponse> logout() {
+        return authService.logout();
+    }
+
+
+    // 🔹 Forgot password
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestParam String email) {
+        ApiResponse<String> response = authService.forgotPassword(email);
+        return ResponseEntity.ok(response);
+    }
+
+    // 🔹 Reset password
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(
+            @RequestParam String token,
+            @RequestParam String newPassword
+    ) {
+        ApiResponse<String> response = authService.resetPassword(token, newPassword);
+        return new ResponseEntity<>(response, response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+    }
+}
+

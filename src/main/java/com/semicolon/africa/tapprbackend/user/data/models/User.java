@@ -31,9 +31,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
-    private String phone;
-
     @Column(nullable = false)
     private String firstName;
 
@@ -80,4 +77,6 @@ public class User {
     public String getFullName() {
         return firstName + " " + lastName;
     }
+
+    public boolean isVerified;
 }
