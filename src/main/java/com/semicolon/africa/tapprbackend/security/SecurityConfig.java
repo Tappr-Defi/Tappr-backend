@@ -2,6 +2,7 @@ package com.semicolon.africa.tapprbackend.security;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,14 @@ public class SecurityConfig {
 
     private final JwtTokenFilter jwtTokenFilter;
     private final CustomUserDetailsService userDetailsService;
+
+    @Value("${spring.mail.username}")
+    private String mailSenderUsername;
+
+    @Value("${spring.mail.password}")
+    private String mailSenderPassword;
+
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -99,8 +108,9 @@ public class SecurityConfig {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
-        mailSender.setUsername("your_email@gmail.com");
-        mailSender.setPassword("your_app_password"); // Use App Password for Gmail
+
+        mailSender.setUsername(mailSenderUsername);
+        mailSender.setPassword(mailSenderPassword);
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");

@@ -1,6 +1,5 @@
-package com.semicolon.africa.tapprbackend.user.dtos.requests;
+package com.semicolon.africa.tapprbackend.onboarding.dtos.requests;
 
-import com.semicolon.africa.tapprbackend.user.enums.Role;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 

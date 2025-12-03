@@ -25,7 +25,7 @@ public class VerificationTokenServiceImpl implements VerificationTokenService {
             throw new IllegalArgumentException("User cannot be null or must have a valid ID");
         }
 
-        // Generate a 6-digit numeric OTP
+        // Generate 6-digit OTP
         String token = String.format("%06d", random.nextInt(1_000_000));
 
         VerificationToken verificationToken = new VerificationToken();
@@ -34,6 +34,7 @@ public class VerificationTokenServiceImpl implements VerificationTokenService {
         verificationToken.setCreatedAt(LocalDateTime.now());
         verificationToken.setExpiresAt(LocalDateTime.now().plusMinutes(15));
 
+        // Remove old tokens for this user
         verificationTokenRepository.deleteAllByUserId(user.getId());
         verificationTokenRepository.save(verificationToken);
 
@@ -43,10 +44,31 @@ public class VerificationTokenServiceImpl implements VerificationTokenService {
     @Override
     public VerificationStatus validateToken(String token) {
         return verificationTokenRepository.findByToken(token)
-                .map(verificationToken -> {
-                    if (verificationToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+                .map(vt -> { // <-- renamed variable to vt
+                    if (vt.getExpiresAt().isBefore(LocalDateTime.now())) {
                         return VerificationStatus.EXPIRED;
                     }
+
+                    // Optional: delete token after successful verification
+                    // verificationTokenRepository.delete(vt);
+
+                    return VerificationStatus.ACTIVE;
+                })
+                .orElse(VerificationStatus.INVALID);
+    }
+
+    @Override
+    public VerificationStatus validateToken(String email, String otp) {
+        return verificationTokenRepository
+                .findByUserEmailIgnoreCaseAndToken(email, otp)
+                .map(vt -> {
+                    if (vt.getExpiresAt().isBefore(LocalDateTime.now())) {
+                        return VerificationStatus.EXPIRED;
+                    }
+
+                    // Optional: delete token after successful verification
+//                     verificationTokenRepository.delete(vt);
+
                     return VerificationStatus.ACTIVE;
                 })
                 .orElse(VerificationStatus.INVALID);

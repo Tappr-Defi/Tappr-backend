@@ -8,9 +8,9 @@ import com.semicolon.africa.tapprbackend.user.services.interfaces.EmailService;
 import com.semicolon.africa.tapprbackend.user.services.interfaces.VerificationTokenService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -61,41 +61,36 @@ public class EmailServiceImpl implements EmailService {
     @Async
     @Override
     public void sendVerificationEmail(@NonNull String to, @NonNull String firstName, @NonNull String otp) {
-        sendEmail(
-                to,
-                "Your QueueNI Verification Code",
+        log.info("📧 Sending verification email to {} with OTP: {}", to, otp);
+        sendEmail(to, "Your Tappr Verification Code",
                 EmailTemplate.verifyEmailHtml(firstName, otp),
                 EmailTemplate.verifyEmailText(firstName, otp),
-                "verification_otp"
-        );
+                "verification_otp");
     }
 
     @Async
+    @Override  // CRITICAL: Add @Override
     public void resendVerificationEmail(@NonNull String email) {
+        log.info("🔄 Resending verification email to: {}", email);
+
         Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
         if (userOpt.isEmpty()) {
-            log.warn("Resend verification requested for non-existent email: {}", email);
-            throw new IllegalArgumentException("No user found with the provided email address.");
+            throw new IllegalArgumentException("User not found");
         }
 
         User user = userOpt.get();
 
         if (user.isVerified()) {
-            log.info("User {} already verified. No new OTP sent.", email);
+            log.info("User already verified: {}", email);
             return;
         }
 
         String otp = verificationTokenService.generateToken(user);
 
-        sendEmail(
-                user.getEmail(),
-                "Your New QueueNI Verification Code",
+        sendEmail(user.getEmail(), "Your New Tappr Verification Code",
                 EmailTemplate.verifyEmailHtml(user.getFirstName(), otp),
                 EmailTemplate.verifyEmailText(user.getFirstName(), otp),
-                "verification_otp_resent"
-        );
-
-        log.info("Resent verification OTP to {}", user.getEmail());
+                "verification_otp_resent");
     }
 
     @Async
@@ -103,7 +98,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendEmailVerifiedEmail(@NonNull String to, @NonNull String firstName, @NonNull String dashboardUrl) {
         sendEmail(
                 to,
-                "Your QueueNI Account is Verified",
+                "Your Tappr Account is Verified",
                 EmailTemplate.emailVerifiedHtml(firstName, dashboardUrl),
                 EmailTemplate.emailVerifiedText(firstName, dashboardUrl),
                 "email_verified"
@@ -115,19 +110,18 @@ public class EmailServiceImpl implements EmailService {
     public void sendPasswordResetEmail(@NonNull String to, @NonNull String firstName, @NonNull String resetUrl) {
         sendEmail(
                 to,
-                "Reset Your QueueNI Password",
+                "Reset Your Tappr Password",
                 EmailTemplate.passwordResetHtml(firstName, resetUrl),
                 EmailTemplate.passwordResetText(firstName, resetUrl),
                 "password_reset"
         );
     }
-
     @Async
     @Override
-    public void sendNewLoginAlertEmail(@NonNull String to, @NonNull String firstName, @NonNull String secureAccountUrl) {
+    public void sendNewLoginAlertEmail(@NonNull String email, @NonNull String firstName, @NonNull String secureAccountUrl) {
         sendEmail(
-                to,
-                "New Sign-in to Your QueueNI Account",
+                email,
+                "New Sign-in to Your Tappr Account",
                 EmailTemplate.newLoginHtml(firstName, secureAccountUrl),
                 EmailTemplate.newLoginText(firstName, secureAccountUrl),
                 "new_login"

@@ -1,4 +1,4 @@
-package com.semicolon.africa.tapprbackend.user.dtos.responses;
+package com.semicolon.africa.tapprbackend.onboarding.dtos.responses;
 
 import lombok.*;
 

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-public class RecieptController {
+public class ReceiptController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
 }

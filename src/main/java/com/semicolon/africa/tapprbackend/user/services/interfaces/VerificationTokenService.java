@@ -6,7 +6,6 @@ import com.semicolon.africa.tapprbackend.user.data.models.User;
 
 public interface VerificationTokenService {
     String generateToken(User user);
-
     VerificationStatus validateToken(String token);
-
+    VerificationStatus validateToken(String email, String otp);
 }

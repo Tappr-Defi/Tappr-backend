@@ -3,10 +3,10 @@
 //import com.semicolon.africa.tapprbackend.security.JwtUtil;
 //import com.semicolon.africa.tapprbackend.user.data.models.User;
 //import com.semicolon.africa.tapprbackend.user.data.repositories.UserRepository;
-//import com.semicolon.africa.tapprbackend.user.dtos.requests.CreateNewUserRequest;
+//import com.semicolon.africa.tapprbackend.onboarding.dtos.requests.CreateNewUserRequest;
 //import com.semicolon.africa.tapprbackend.user.dtos.requests.LoginRequest;
 //import com.semicolon.africa.tapprbackend.user.dtos.requests.LogoutRequest;
-//import com.semicolon.africa.tapprbackend.user.dtos.responses.CreateNewUserResponse;
+//import com.semicolon.africa.tapprbackend.onboarding.dtos.responses.CreateNewUserResponse;
 //import com.semicolon.africa.tapprbackend.user.dtos.responses.LoginResponse;
 //import com.semicolon.africa.tapprbackend.user.dtos.responses.LogoutUserResponse;
 //import com.semicolon.africa.tapprbackend.user.enums.Role;
