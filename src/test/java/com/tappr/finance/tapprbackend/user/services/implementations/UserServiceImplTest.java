@@ -1,0 +1,7 @@
+package com.tappr.finance.tapprbackend.user.services.implementations;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserServiceImplTest {
+
+}
