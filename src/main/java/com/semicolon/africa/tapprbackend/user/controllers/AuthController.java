@@ -1,6 +1,7 @@
 package com.semicolon.africa.tapprbackend.user.controllers;
 
 import com.semicolon.africa.tapprbackend.general.dtos.ApiResponse;
+import com.semicolon.africa.tapprbackend.general.enums.VerificationStatus;
 import com.semicolon.africa.tapprbackend.onboarding.dtos.requests.CreateNewUserRequest;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.LoginRequest;
 import com.semicolon.africa.tapprbackend.onboarding.dtos.responses.CreateNewUserResponse;
@@ -36,6 +37,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+
+    @PostMapping("/validate-otp")
+    public ResponseEntity<ApiResponse<VerificationStatus>> validateToken(@RequestParam String email, String otp){
+        ApiResponse<VerificationStatus> response = userService.validateToken(email, otp);
+        return ResponseEntity.ok(response);
+    }
 
     // 🔹 Resend verification token
     @PostMapping("/resend-verification")

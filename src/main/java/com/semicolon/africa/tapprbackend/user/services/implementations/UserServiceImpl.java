@@ -33,13 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Corrected UserService implementation:
- * - verifyEmailAndLogin validates by email + otp
- * - resendVerificationOtp actually sends OTP and enforces simple cooldown
- * - login authenticates using user.getEmail() (not raw input)
- * - avoids returning OTP to caller
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -55,9 +49,7 @@ public class UserServiceImpl implements UserService {
 
     private static final int RESEND_COOLDOWN_SECONDS = 60;
 
-    // ---------------------
-    // Registration & Verify
-    // ---------------------
+
 
     @Transactional
     @Override
@@ -85,7 +77,6 @@ public class UserServiceImpl implements UserService {
             user.setCreatedAt(LocalDateTime.now());
             userRepository.save(user);
 
-            // generate OTP / verification token and send email (OTP is sent inside EmailService)
             String otp = verificationTokenService.generateToken(user);
             emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), otp);
 
@@ -95,7 +86,6 @@ public class UserServiceImpl implements UserService {
             resp.setPhoneNumber(user.getPhoneNumber());
             resp.setMessage(SuccessMessages.USER_REGISTERED);
 
-            // Do NOT include OTP in API response in production
             return ApiResponse.success(SuccessMessages.EMAIL_SENT, resp);
 
         } catch (IllegalArgumentException ex) {
@@ -107,30 +97,57 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public ApiResponse<VerificationStatus> validateToken(String email, String otp) {
+
+        Optional<VerificationToken> optionalToken =
+                verificationTokenRepository.findByUserEmailIgnoreCaseAndToken(email, otp);
+
+        if (optionalToken.isEmpty()) {
+            return ApiResponse.failure(ErrorMessages.INVALID_TOKEN, VerificationStatus.INVALID);
+        }
+
+        VerificationToken token = optionalToken.get();
+
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            return ApiResponse.failure(ErrorMessages.TOKEN_EXPIRED, VerificationStatus.EXPIRED);
+        }
+
+        if (token.isUsed()) {
+            return ApiResponse.failure(ErrorMessages.INVALID_TOKEN, VerificationStatus.INVALID);
+        }
+
+        token.setUsed(true);
+        verificationTokenRepository.save(token);
+
+        User user = token.getUser();
+        user.setVerified(true);
+        userRepository.save(user);
+
+        return ApiResponse.success(SuccessMessages.EMAIL_VERIEFIED_SUCCESSFULLY, VerificationStatus.ACTIVE);
+    }
+
+
     @Transactional
     @Override
     public ApiResponse<LoginResponse> verifyEmailAndLogin(String email, String otp) {
+
         try {
-            // Use verification service to validate by email + otp
             VerificationStatus status = verificationTokenService.validateToken(email, otp);
 
-            if (status == VerificationStatus.INVALID) return ApiResponse.failure(ErrorMessages.INVALID_TOKEN);
-            if (status == VerificationStatus.EXPIRED) return ApiResponse.failure(ErrorMessages.TOKEN_EXPIRED);
+            if (status == VerificationStatus.INVALID)
+                return ApiResponse.failure(ErrorMessages.INVALID_TOKEN);
 
-            // Find the token record by email + token (repository method must exist)
-            VerificationToken token = verificationTokenRepository
-                    .findByUserEmailIgnoreCaseAndToken(email, otp)
-                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.INVALID_TOKEN));
+            if (status == VerificationStatus.EXPIRED)
+                return ApiResponse.failure(ErrorMessages.TOKEN_EXPIRED);
 
-            User user = token.getUser();
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+
             user.setVerified(true);
             user.setLoggedIn(true);
             userRepository.save(user);
 
-            // delete used token
-            verificationTokenRepository.delete(token);
-
-            // issue tokens
             String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
             String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getEmail());
 
@@ -143,27 +160,14 @@ public class UserServiceImpl implements UserService {
                     user.getId().toString()
             );
 
-            // optionally send verification confirmation email (non-blocking)
-            try {
-                emailService.sendEmailVerifiedEmail(user.getEmail(), user.getFirstName(), "https://tappr.africa/dashboard");
-            } catch (Exception e) {
-                log.warn("Failed to send post-verification email to {}: {}", user.getEmail(), e.getMessage());
-            }
-
             return ApiResponse.success(SuccessMessages.USER_VERIFIED_AND_LOGGED_IN, response);
 
-        } catch (IllegalArgumentException ex) {
-            log.warn("Verify & login failed: {}", ex.getMessage());
-            return ApiResponse.failure(ex.getMessage());
         } catch (Exception ex) {
             log.error("Verify & login error: ", ex);
             return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
         }
     }
 
-    // ---------------------
-    // Resend OTP
-    // ---------------------
 
     @Transactional
     @Override
@@ -174,7 +178,6 @@ public class UserServiceImpl implements UserService {
 
             if (user.isVerified()) return ApiResponse.failure(SuccessMessages.EMAIL_VERIFIED);
 
-            // Simple cooldown: check last token for this user
             Optional<VerificationToken> optLast = verificationTokenRepository
                     .findByUserId(user.getId());
 
@@ -185,11 +188,9 @@ public class UserServiceImpl implements UserService {
                 }
             }
 
-            // generate and send OTP
             String otp = verificationTokenService.generateToken(user);
             emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), otp);
 
-            // Do NOT return otp in response
             return ApiResponse.success(SuccessMessages.EMAIL_SENT, null);
 
         } catch (IllegalArgumentException ex) {
@@ -201,29 +202,30 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    // ---------------------
-    // Login / Refresh / Logout
-    // ---------------------
 
     @Transactional
     @Override
     public ApiResponse<LoginResponse> login(LoginRequest request) {
+        String loginId = request.getEmail();
+
         try {
-            // allow email or phone login (emailOrPhone)
-            Optional<User> userOpt = userRepository.findByEmailIgnoreCase(request.getEmail());
-            if (userOpt.isEmpty()) userOpt = userRepository.findByPhoneNumber(request.getEmail());
+            Optional<User> userOpt = userRepository.findByEmailIgnoreCase(loginId);
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByPhoneNumber(loginId);
+            }
 
             User user = userOpt.orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
-            if (!user.isVerified()) return ApiResponse.failure(ErrorMessages.EMAIL_NOT_VERIFIED);
+            if (!user.isVerified()) {
+                return ApiResponse.failure(ErrorMessages.EMAIL_NOT_VERIFIED);
+            }
 
-            // authenticate always using user.getEmail() to align with UserDetailsService expectations
             Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(loginId, request.getPassword())
+
             );
 
-            // auth.getName() should be user id string if your UserDetails implementation sets it
-            UUID userId = UUID.fromString(auth.getName());
+            UUID userId = user.getId();
             String accessToken = jwtUtil.generateAccessToken(userId, user.getEmail(), user.getRole().name());
             String refreshToken = jwtUtil.generateRefreshToken(userId, user.getEmail());
 
@@ -310,9 +312,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    // ---------------------
-    // Password reset flows
-    // ---------------------
 
     @Override
     public ApiResponse<String> forgotPassword(String email) {
@@ -339,7 +338,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<String> resetPassword(String token, String newPassword) {
         try {
-            // Assuming verificationTokenService.validateToken(String token) exists for token-style flows
             VerificationStatus status = verificationTokenService.validateToken(token);
 
             if (status == VerificationStatus.INVALID) return ApiResponse.failure(ErrorMessages.INVALID_TOKEN);
@@ -362,10 +360,6 @@ public class UserServiceImpl implements UserService {
             return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
         }
     }
-
-    // =========================
-    // Helper validation methods
-    // =========================
 
     private void validateSignUpRequest(CreateNewUserRequest request) {
         nullOrEmptyValueChecker(request);

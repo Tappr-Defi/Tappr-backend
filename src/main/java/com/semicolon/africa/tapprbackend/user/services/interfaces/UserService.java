@@ -1,6 +1,7 @@
 package com.semicolon.africa.tapprbackend.user.services.interfaces;
 
 import com.semicolon.africa.tapprbackend.general.dtos.ApiResponse;
+import com.semicolon.africa.tapprbackend.general.enums.VerificationStatus;
 import com.semicolon.africa.tapprbackend.onboarding.dtos.requests.CreateNewUserRequest;
 import com.semicolon.africa.tapprbackend.user.dtos.requests.LoginRequest;
 import com.semicolon.africa.tapprbackend.onboarding.dtos.responses.CreateNewUserResponse;
@@ -11,6 +12,8 @@ import jakarta.transaction.Transactional;
 public interface UserService {
     @Transactional
     ApiResponse<CreateNewUserResponse> register(CreateNewUserRequest request);
+
+    ApiResponse<VerificationStatus> validateToken(String email, String otp);
 
     @Transactional
     ApiResponse<LoginResponse> verifyEmailAndLogin(String email, String otp);
