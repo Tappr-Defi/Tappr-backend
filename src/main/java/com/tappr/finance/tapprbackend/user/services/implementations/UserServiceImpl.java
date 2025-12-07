@@ -1,9 +1,14 @@
 package com.tappr.finance.tapprbackend.user.services.implementations;
 
+import com.tappr.finance.tapprbackend.Wallet.service.interfaces.WalletService;
 import com.tappr.finance.tapprbackend.general.dtos.ApiResponse;
 import com.tappr.finance.tapprbackend.general.enums.VerificationStatus;
 import com.tappr.finance.tapprbackend.general.messages.ErrorMessages;
 import com.tappr.finance.tapprbackend.general.messages.SuccessMessages;
+import com.tappr.finance.tapprbackend.kyc.dtos.requests.IdVerificationRequest;
+import com.tappr.finance.tapprbackend.kyc.dtos.responses.KycProviderResponse;
+import com.tappr.finance.tapprbackend.kyc.enums.KycLevel;
+import com.tappr.finance.tapprbackend.kyc.services.interfaces.KycProviderService;
 import com.tappr.finance.tapprbackend.onboarding.repositories.VerificationTokenRepository;
 import com.tappr.finance.tapprbackend.onboarding.services.interfaces.VerificationTokenService;
 import com.tappr.finance.tapprbackend.security.JwtUtil;
@@ -45,6 +50,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final WalletService walletService;
+    private final KycProviderService smileIdProvider;
 
     private static final int RESEND_COOLDOWN_SECONDS = 60;
 
@@ -187,7 +194,6 @@ public class UserServiceImpl implements UserService {
         try {
             User user = userRepository.findByEmailIgnoreCase(email)
                     .orElseThrow(() -> new TapprException(ErrorMessages.USER_NOT_FOUND));
-
             if (user.isVerified()) return ApiResponse.failure(SuccessMessages.USER_ALREADY_VERIFIED);
 
             Optional<VerificationToken> optLast = verificationTokenRepository
@@ -225,16 +231,13 @@ public class UserServiceImpl implements UserService {
             if (status == VerificationStatus.INVALID) return ApiResponse.failure(ErrorMessages.INVALID_TOKEN);
             if (status == VerificationStatus.EXPIRED) return ApiResponse.failure(ErrorMessages.TOKEN_EXPIRED);
 
-            // The token is valid; proceed with password update
             VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.INVALID_TOKEN));
 
             User user = verificationToken.getUser();
-            // The service logic to update the password hash
             user.setPasswordHash(passwordEncoder.encode(newPassword));
             userRepository.save(user);
 
-            // Delete the token immediately after use
             verificationTokenRepository.delete(verificationToken);
 
             return ApiResponse.success(SuccessMessages.OPERATION_SUCCESSFUL, null);
@@ -262,12 +265,26 @@ public class UserServiceImpl implements UserService {
             user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
 
-            Optional<String> uniqueUsername = request.getUsername();
-            User foundUserByUsername = (User) userRepository.findUserByUsername(String.valueOf(uniqueUsername));
+            Optional<String> optionalUsername = request.getUsername();
 
-            if (foundUserByUsername != null) throw new TapprException(ErrorMessages.USERNAME_NOT_AVAILABLE);
+            if (optionalUsername.isPresent()) {
+                String newUsername = optionalUsername.get().trim();
 
-            user.setUsername(uniqueUsername.toString());
+                if (!newUsername.isEmpty()) {
+                    Optional<User> foundUserOpt = userRepository.findUserByUsername(newUsername);
+
+                    if (foundUserOpt.isPresent()) {
+                        User foundUser = foundUserOpt.get();
+                        if (!foundUser.getId().equals(user.getId())) {
+                            throw new TapprException(ErrorMessages.USERNAME_NOT_AVAILABLE);
+                        }
+                    }
+
+                    user.setUsername(newUsername);
+                }
+            }
+            user.setKycLevel(KycLevel.TIER_1);
+            user.setProfileSetupComplete(true);
             userRepository.save(user);
 
             ProfileSetupResponse profileSetupResponse = new ProfileSetupResponse();
@@ -276,11 +293,72 @@ public class UserServiceImpl implements UserService {
 
             return ApiResponse.success(SuccessMessages.PROFILE_UPDATE_SUCCESSFUL, profileSetupResponse);
 
+        } catch (TapprException ex) {
+            log.warn("Profile setup failed: {}", ex.getMessage());
+            return ApiResponse.failure(ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            log.warn("Logout failed: {}", ex.getMessage());
+            log.warn("Profile setup error (Illegal Arg): {}", ex.getMessage());
             return ApiResponse.failure(ex.getMessage());
         } catch (Exception ex) {
-            log.error("Logout error: ", ex);
+            log.error("Profile setup error: ", ex);
+            return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
+        }
+    }
+
+    @Override
+    public ApiResponse<KycProviderResponse> startKycTier1(IdVerificationRequest request) {
+        try {
+            // 1. Get Authenticated User
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
+            }
+
+            UUID userId = UUID.fromString(auth.getName());
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+
+            // 2. Pre-Check: Don't verify if already verified (Save API costs)
+            if (user.getKycLevel() == KycLevel.TIER_1 || user.getKycLevel() == KycLevel.TIER_2) {
+                // Return success immediately if already done
+                KycProviderResponse resp = new KycProviderResponse();
+                resp.setSuccess(true);
+                resp.setMessage("User is already KYC Tier 1 Verified");
+                return ApiResponse.success("Already Verified", resp);
+            }
+
+            // 3. Call The Provider (Smile ID / etc)
+            KycProviderResponse providerResponse = smileIdProvider.submitVerification(user.getId(), request);
+
+            // 4. Handle Response
+            if (providerResponse.isSuccess()) {
+                // A. Update User KYC Status
+                user.setKycVerified(true);
+                user.setKycLevel(KycLevel.TIER_1); // Upgrade Level
+                userRepository.save(user);
+
+                // B. TRIGGER WALLET CREATION
+                // This is the critical moment. Once verified, they get a bank account.
+                try {
+
+                    walletService.createWalletForUser(user);
+                } catch (Exception e) {
+                    log.error("KYC successful but Wallet Creation failed for user: {}", user.getId(), e);
+                    // Decide: Do you fail the whole request? Or return success with a warning?
+                    // Usually, we log it and retry via a background job, but for now, let's log it.
+                }
+
+                return ApiResponse.success(SuccessMessages.KYC_VERIFICATION_SUCCESSFUL, providerResponse);
+            } else {
+                // Verification Failed
+                return ApiResponse.failure(providerResponse.getMessage());
+            }
+
+        } catch (IllegalArgumentException ex) {
+            log.warn("KYC init failed: {}", ex.getMessage());
+            return ApiResponse.failure(ex.getMessage());
+        } catch (Exception ex) {
+            log.error("KYC fatal error: ", ex);
             return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
         }
     }

@@ -1,4 +1,4 @@
-package com.tappr.finance.tapprbackend.Wallet.data;
+package com.tappr.finance.tapprbackend.Wallet.data.model;
 
 import com.tappr.finance.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;

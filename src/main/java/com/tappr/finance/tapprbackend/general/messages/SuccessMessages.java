@@ -18,4 +18,5 @@ public final class SuccessMessages {
     public static final String EMAIL_VERIFICATION_SUCCESSFUL = "Email verification successful";
     public static final String USER_ALREADY_VERIFIED = "User is already verified.";
     public static final String PROFILE_UPDATE_SUCCESSFUL = "User profile updated successfully";
+    public static final String KYC_VERIFICATION_SUCCESSFUL = "Kyc verification successful";
 }

@@ -2,11 +2,12 @@ package com.tappr.finance.tapprbackend.user.data.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.tappr.finance.tapprbackend.Wallet.data.model.Wallet;
+import com.tappr.finance.tapprbackend.kyc.enums.KycLevel;
 import com.tappr.finance.tapprbackend.user.enums.Role;
 import com.tappr.finance.tapprbackend.kyc.data.models.KycDocument;
 import com.tappr.finance.tapprbackend.notification.data.Notification;
 import com.tappr.finance.tapprbackend.transaction.data.models.Transaction;
-import com.tappr.finance.tapprbackend.Wallet.data.LoyaltyWallet;
+import com.tappr.finance.tapprbackend.Wallet.data.model.LoyaltyWallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -49,9 +50,12 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role = Role.REGULAR;
 
+    private KycLevel kycLevel;
+
     private boolean isKycVerified = false;
     private boolean isTier2Verified = false;
     private boolean isLoggedIn = false;
+    private boolean profileSetupComplete;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id")
