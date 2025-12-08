@@ -32,10 +32,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    // ✅ FIX 1: Use snake_case, avoid spaces in DB columns
+    @Column(name = "first_name")
     private String firstName;
 
-    @Column(nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
     private String username;
@@ -43,19 +44,24 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false, unique = true)
+    // ✅ FIX 2: Consistent naming
+    @Column(nullable = false, unique = true, name = "phone_number")
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role = Role.REGULAR;
 
+    // ✅ FIX 3: Make this private and initialize it
+    // This tracks Email Verification status
+    private boolean isVerified = false;
+
     private KycLevel kycLevel;
 
     private boolean isKycVerified = false;
     private boolean isTier2Verified = false;
     private boolean isLoggedIn = false;
-    private boolean profileSetupComplete;
+    private boolean profileSetupComplete = false;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id")
@@ -79,10 +85,7 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private MerchantProfile merchantProfile;
 
-
     public String getFullName() {
-        return firstName + " " + lastName;
+        return (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
     }
-
-    public boolean isVerified;
 }

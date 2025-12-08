@@ -224,7 +224,6 @@ public class UserServiceImpl implements UserService {
     }
 
 
-
     @Transactional
     @Override
     public ApiResponse<String> resetPassword(String token, String newPassword) {
@@ -311,7 +310,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<KycProviderResponse> startKycTier1(IdVerificationRequest request) {
         try {
-            // 1. Get Authenticated User
             var auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
                 return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
@@ -321,39 +319,28 @@ public class UserServiceImpl implements UserService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
-            // 2. Pre-Check: Don't verify if already verified (Save API costs)
             if (user.getKycLevel() == KycLevel.TIER_1 || user.getKycLevel() == KycLevel.TIER_2) {
-                // Return success immediately if already done
                 KycProviderResponse resp = new KycProviderResponse();
                 resp.setSuccess(true);
                 resp.setMessage("User is already KYC Tier 1 Verified");
                 return ApiResponse.success("Already Verified", resp);
             }
 
-            // 3. Call The Provider (Smile ID / etc)
             KycProviderResponse providerResponse = smileIdProvider.submitVerification(user.getId(), request);
 
-            // 4. Handle Response
             if (providerResponse.isSuccess()) {
-                // A. Update User KYC Status
                 user.setKycVerified(true);
-                user.setKycLevel(KycLevel.TIER_1); // Upgrade Level
+                user.setKycLevel(KycLevel.TIER_1);
                 userRepository.save(user);
 
-                // B. TRIGGER WALLET CREATION
-                // This is the critical moment. Once verified, they get a bank account.
                 try {
-
                     walletService.createWalletForUser(user);
                 } catch (Exception e) {
                     log.error("KYC successful but Wallet Creation failed for user: {}", user.getId(), e);
-                    // Decide: Do you fail the whole request? Or return success with a warning?
-                    // Usually, we log it and retry via a background job, but for now, let's log it.
-                }
 
+                }
                 return ApiResponse.success(SuccessMessages.KYC_VERIFICATION_SUCCESSFUL, providerResponse);
             } else {
-                // Verification Failed
                 return ApiResponse.failure(providerResponse.getMessage());
             }
 
