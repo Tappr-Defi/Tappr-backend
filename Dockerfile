@@ -33,7 +33,7 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 # Expose the port your app runs on
-EXPOSE 8081
+EXPOSE 8082
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "-Dserver.port=8081", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -jar -Dserver.port=${PORT:-8082} app.jar"]
