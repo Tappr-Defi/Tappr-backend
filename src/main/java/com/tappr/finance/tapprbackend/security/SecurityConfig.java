@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,23 +39,19 @@ public class SecurityConfig {
     @Value("${spring.mail.password}")
     private String mailSenderPassword;
 
-
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // for preflight requests
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/users/register",
-                                "/api/users/login",
-                                "/api/users/verify-email/**",
-                                "/api/enums/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .userDetailsService(userDetailsService)
@@ -62,7 +59,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, ex2) -> {
                             res.setContentType("application/json");
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.getWriter().write("{\"error\":\"Unauthorized\"}");
+                            res.getWriter().write("{\"error\":\"Unauthorized: " + ex2.getMessage() + "\"}");
                         })
                 );
 
@@ -71,18 +68,13 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 🔹 CORS Configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://tappr.africa",
-                "https://tappr.vercel.app"
-        ));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://tappr.africa")); // Add your domains
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization", "Content-Type"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -90,25 +82,21 @@ public class SecurityConfig {
         return source;
     }
 
-    // 🔹 AuthenticationManager Bean (fixes autowire issue)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // 🔹 Password Encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔹 JavaMailSender Bean (fixes autowire issue)
     @Bean
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost("smtp.gmail.com");
         mailSender.setPort(587);
-
         mailSender.setUsername(mailSenderUsername);
         mailSender.setPassword(mailSenderPassword);
 

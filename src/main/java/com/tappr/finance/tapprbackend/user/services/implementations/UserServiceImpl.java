@@ -26,6 +26,7 @@ import com.tappr.finance.tapprbackend.onboarding.services.interfaces.EmailServic
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -55,6 +56,8 @@ public class UserServiceImpl implements UserService {
 
     private static final int RESEND_COOLDOWN_SECONDS = 60;
 
+    @Value("${reset_password_url}")
+    private String resetPasswordUrl;
 
 
     @Transactional
@@ -174,7 +177,7 @@ public class UserServiceImpl implements UserService {
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
             String token = verificationTokenService.generateToken(user);
-            String resetUrl = "https://tappr.com/reset-password?token=" + token;
+            String resetUrl = resetPasswordUrl + token;
 
             emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), resetUrl);
 

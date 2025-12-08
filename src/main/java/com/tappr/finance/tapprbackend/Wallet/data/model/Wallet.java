@@ -1,23 +1,22 @@
-package com.tappr.finance.tapprbackend.wallet.data.models;
+package com.tappr.finance.tapprbackend.Wallet.data.model;
 
-import com.tappr.finance.tapprbackend.Wallet.data.model.Currency;
 import com.tappr.finance.tapprbackend.user.data.models.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "wallets", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "currency_code"})
+        @UniqueConstraint(columnNames = {"user_id", "currency_code"}),
+        @UniqueConstraint(columnNames = {"deposit_address"}),
+        @UniqueConstraint(columnNames = {"derivation_index"})
 })
 public class Wallet {
     @Id
@@ -38,4 +37,9 @@ public class Wallet {
     private String accountNumber;
 
     private String depositAddress;
+
+    private Long derivationIndex;
+
+    @Column(nullable = false)
+    private boolean isOmnibus = false;
 }

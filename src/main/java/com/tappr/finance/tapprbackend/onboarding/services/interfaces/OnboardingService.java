@@ -17,4 +17,5 @@ public interface OnboardingService {
     @Transactional
     ApiResponse<LoginResponse> verifyEmailAndLogin(String email, String otp);
 
+    ApiResponse<String> resendVerificationOtp(String email);
 }

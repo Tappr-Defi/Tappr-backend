@@ -120,7 +120,6 @@ public class OnboardingServiceImpl implements OnboardingService {
     @Transactional
     @Override
     public ApiResponse<LoginResponse> verifyEmailAndLogin(String email, String otp) {
-
         try {
             ApiResponse<VerificationStatus> verificationResult = verificationTokenService.validateToken(email, otp);
 
@@ -154,16 +153,35 @@ public class OnboardingServiceImpl implements OnboardingService {
         }
     }
 
+    @Transactional
+    @Override
+    public ApiResponse<String> resendVerificationOtp(String email) {
+        try {
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new TapprException(ErrorMessages.USER_NOT_FOUND));
+
+            if (user.isVerified()) {
+                return ApiResponse.success("User is already verified.", null);
+            }
+
+            String otp = verificationTokenService.generateToken(user);
+
+            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), otp);
+
+            return ApiResponse.success(SuccessMessages.EMAIL_SENT, null);
+
+        } catch (Exception ex) {
+            log.error("Resend OTP error: ", ex);
+            return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
+        }
+    }
+
     private void validateSignUpRequest(CreateNewUserRequest request) {
         nullOrEmptyValueChecker(request);
         validateEntriesForSpecialCharsAndWhiteSpaces(request);
     }
 
     private static void nullOrEmptyValueChecker(CreateNewUserRequest request) {
-//        if (request.getFirstName() == null || request.getFirstName().trim().isEmpty())
-//            throw new TapprException("First name is required");
-//        if (request.getLastName() == null || request.getLastName().trim().isEmpty())
-//            throw new TapprException("Last name is required");
         if (request.getEmail() == null || request.getEmail().trim().isEmpty())
             throw new TapprException("Email is required");
         if (request.getPassword() == null || request.getPassword().trim().isEmpty())
@@ -177,10 +195,6 @@ public class OnboardingServiceImpl implements OnboardingService {
         if (!request.getEmail().matches(emailRegex))
             throw new TapprException("Invalid email format");
         String nameRegex = "^[\\p{L}' -]+$";
-//        if (!request.getFirstName().matches(nameRegex))
-//            throw new TapprException("First name contains invalid characters");
-//        if (!request.getLastName().matches(nameRegex))
-//            throw new TapprException("Last name contains invalid characters");
         if (request.getPassword().contains(" "))
             throw new TapprException("Password must not contain whitespace");
     }
