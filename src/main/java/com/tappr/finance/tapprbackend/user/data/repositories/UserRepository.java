@@ -22,7 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByPhoneNumber(@NotEmpty(message = "phone number cannot be empty") String phoneNumber);
 
-    Optional<User> findById(UUID userId);
+    Optional<User> findById(UUID id);
 
     Optional<User> findUserByUsername(String username);
 }

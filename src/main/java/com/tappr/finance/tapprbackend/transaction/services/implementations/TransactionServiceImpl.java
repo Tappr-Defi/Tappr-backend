@@ -24,7 +24,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public CreateTransactionResponse createTransaction(CreateTransactionRequest request) {
-        User merchant = userRepository.findById(request.getMerchantId())
+        User merchant = userRepository.findById(UUID.fromString(request.getMerchantId()))
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found"));
 
         Transaction transaction = new Transaction();
@@ -32,11 +32,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setMerchant(merchant);
         transaction.setAmount(request.getAmount());
         transaction.setCurrency(CurrencyType.valueOf(request.getCurrency()));
-        transaction.setStatus(
-                request.getStatus() != null
-                        ? TransactionStatus.valueOf(request.getStatus().toUpperCase())
-                        : TransactionStatus.PENDING
-        );
+        transaction.setStatus(TransactionStatus.PENDING);
         transaction.setInitiatedAt(LocalDateTime.now());
         Transaction savedTransaction = transactionRepository.save(transaction);
 
@@ -46,9 +42,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     private CreateTransactionResponse mapToResponse(Transaction transaction) {
         CreateTransactionResponse response = new CreateTransactionResponse();
-        response.setTransactionId(transaction.getId());
+        response.setTransactionId(String.valueOf(transaction.getId()));
         response.setTransactionRef(transaction.getTransactionRef());
-        response.setMerchantName(transaction.getMerchant().getFullName()); // or getUserName()
+        response.setMerchantName(transaction.getMerchant().getFullName());
         response.setAmount(transaction.getAmount());
         response.setCurrency(String.valueOf(transaction.getCurrency()).toUpperCase());
         response.setStatus(transaction.getStatus());
@@ -56,7 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
         response.setCompletedAt(transaction.getCompletedAt());
 
         if (transaction.getReceipt() != null) {
-            response.setReceiptUrl(transaction.getReceipt().getDownloadUrl()); // assuming Receipt has this
+            response.setTransactionRef(transaction.getReceipt().getRegularReceiptDownloadUrl());
         }
 
         return response;

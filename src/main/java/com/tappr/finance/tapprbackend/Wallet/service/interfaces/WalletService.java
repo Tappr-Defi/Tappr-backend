@@ -9,5 +9,4 @@ public interface WalletService {
     Wallet createWallet(User user, String currencyCode);
 
     void createWalletForUser(User user);
-//    void createWalletForUser(User user);
 }

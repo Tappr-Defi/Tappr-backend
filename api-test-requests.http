@@ -1,0 +1,69 @@
+### Health Check
+GET http://localhost:8081/api/v1/auth/health
+
+### Register User (Correct endpoint and request body)
+POST http://localhost:8081/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "08172028728",
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Login User (Correct endpoint and request body)
+POST http://localhost:8081/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Logout User
+POST http://localhost:8081/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com"
+}
+
+### Get User Profile (requires token from login response)
+GET http://localhost:8081/api/v1/user/profile
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Validate Token
+POST http://localhost:8081/api/v1/user/validate-token
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Refresh Token
+POST http://localhost:8081/api/v1/user/refresh-token
+Authorization: Bearer YOUR_REFRESH_TOKEN_HERE
+
+###
+# LEGACY ENDPOINTS (These should be updated)
+# Your old requests were using these paths:
+
+### OLD: Register (Wrong path)
+POST http://localhost:8081/api/auth/v1/signup
+Content-Type: application/json
+
+{
+  "firstName": "john",
+  "lastName": "Jis",
+  "password": "pass",
+  "userName": "dan",
+  "email": "sss@gmail.com",
+  "isVerified": false
+}
+
+### OLD: Login (Wrong path and body structure)
+POST http://localhost:8081/api/auth/v1/login
+Content-Type: application/json
+
+{
+  "username": "dan",
+  "password": "pass"
+}

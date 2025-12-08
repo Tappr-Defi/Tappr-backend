@@ -4,21 +4,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-
-import lombok.Getter;
-import lombok.Setter;
+import java.util.UUID;
 
 @Setter
 @Getter
 public class CreateTransactionRequest {
 
-    private Long merchantId;
-
+    private String merchantId;
+    private String accountNumber;
     private BigDecimal amount;
-
-    private String currency = "NGN";
-
-    // Optional: could be set to PENDING by default in the service layer
-    private String status;
+    private String currency;
+    private boolean status;
 }
 
