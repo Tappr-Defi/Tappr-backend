@@ -54,8 +54,6 @@ public class OnboardingServiceImpl implements OnboardingService {
             }
 
             User user = new User();
-//            user.setFirstName(request.getFirstName().trim());
-//            user.setLastName(request.getLastName().trim());
             user.setEmail(request.getEmail().toLowerCase().trim());
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setPhoneNumber(request.getPhoneNumber().trim());
@@ -67,7 +65,12 @@ public class OnboardingServiceImpl implements OnboardingService {
             userRepository.save(user);
 
             String otp = verificationTokenService.generateToken(user);
-            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), otp);
+
+            String emailName = (user.getFirstName() != null && !user.getFirstName().isEmpty())
+                    ? user.getFirstName()
+                    : "User";
+
+            emailService.sendVerificationEmail(user.getEmail(), emailName, otp);
 
             CreateNewUserResponse resp = new CreateNewUserResponse();
             resp.setUserId(user.getId().toString());
@@ -166,12 +169,15 @@ public class OnboardingServiceImpl implements OnboardingService {
 
             String otp = verificationTokenService.generateToken(user);
 
-            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), otp);
+            String emailName = (user.getFirstName() != null && !user.getFirstName().isEmpty())
+                    ? user.getFirstName()
+                    : "User";
+
+            emailService.sendVerificationEmail(user.getEmail(), emailName, otp);
 
             return ApiResponse.success(SuccessMessages.EMAIL_SENT, null);
 
         } catch (TapprException ex) {
-
             return ApiResponse.failure(ex.getMessage());
         } catch (Exception ex) {
             log.error("Resend OTP error: ", ex);
@@ -197,7 +203,7 @@ public class OnboardingServiceImpl implements OnboardingService {
         String emailRegex = "^[\\w+.'-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
         if (!request.getEmail().matches(emailRegex))
             throw new TapprException("Invalid email format");
-        String nameRegex = "^[\\p{L}' -]+$";
+
         if (request.getPassword().contains(" "))
             throw new TapprException("Password must not contain whitespace");
     }
