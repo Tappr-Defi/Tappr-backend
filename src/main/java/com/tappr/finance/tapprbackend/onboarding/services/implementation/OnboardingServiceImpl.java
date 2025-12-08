@@ -77,7 +77,7 @@ public class OnboardingServiceImpl implements OnboardingService {
 
             return ApiResponse.success(SuccessMessages.EMAIL_SENT, resp);
 
-        } catch (IllegalArgumentException ex) {
+        } catch (TapprException | IllegalArgumentException ex) {
             log.warn("Registration validation failed: {}", ex.getMessage());
             return ApiResponse.failure(ex.getMessage());
         } catch (Exception ex) {
@@ -170,6 +170,9 @@ public class OnboardingServiceImpl implements OnboardingService {
 
             return ApiResponse.success(SuccessMessages.EMAIL_SENT, null);
 
+        } catch (TapprException ex) {
+
+            return ApiResponse.failure(ex.getMessage());
         } catch (Exception ex) {
             log.error("Resend OTP error: ", ex);
             return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
