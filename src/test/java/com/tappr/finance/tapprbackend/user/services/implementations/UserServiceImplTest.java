@@ -13,7 +13,6 @@ import com.tappr.finance.tapprbackend.onboarding.repositories.VerificationTokenR
 import com.tappr.finance.tapprbackend.onboarding.services.interfaces.EmailService;
 import com.tappr.finance.tapprbackend.onboarding.services.interfaces.VerificationTokenService;
 import com.tappr.finance.tapprbackend.security.JwtUtil;
-import com.tappr.finance.tapprbackend.tapprException.TapprException;
 import com.tappr.finance.tapprbackend.user.data.models.User;
 import com.tappr.finance.tapprbackend.user.data.models.VerificationToken;
 import com.tappr.finance.tapprbackend.user.data.repositories.UserRepository;
@@ -70,7 +69,7 @@ class UserServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Set the value for @Value("${reset_password_url}")
+        // Mock @Value property
         ReflectionTestUtils.setField(userService, "resetPasswordUrl", "http://test.com/reset?token=");
 
         mockUser = new User();
@@ -79,8 +78,16 @@ class UserServiceImplTest {
         mockUser.setPhoneNumber("08012345678");
         mockUser.setPasswordHash("encodedHash");
         mockUser.setRole(Role.REGULAR);
-        mockUser.setVerified(true); // Default to verified for login tests
+        mockUser.setVerified(true);
         mockUser.setKycLevel(KycLevel.TIER_0);
+        mockUser.setLoggedIn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (mockedSecurityContextHolder != null) {
+            mockedSecurityContextHolder.close();
+        }
     }
 
     // ==========================================
@@ -137,22 +144,21 @@ class UserServiceImplTest {
     }
 
     // ==========================================
-    // LOGOUT TESTS (Static Mocking)
+    // LOGOUT TESTS
     // ==========================================
 
     @Test
     void logout_ShouldSuccess_WhenAuthenticated() {
         setupSecurityContext();
 
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        // Uses findByEmailIgnoreCase because we updated the logic
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
 
         ApiResponse<LogoutUserResponse> response = userService.logout();
 
         assertTrue(response.isSuccess());
         assertFalse(mockUser.isLoggedIn());
         verify(userRepository).save(mockUser);
-
-        closeSecurityContext();
     }
 
     // ==========================================
@@ -204,7 +210,7 @@ class UserServiceImplTest {
     void resendVerificationOtp_ShouldFail_WhenCooldownActive() {
         mockUser.setVerified(false);
         VerificationToken lastToken = new VerificationToken();
-        lastToken.setCreatedAt(LocalDateTime.now().minusSeconds(10)); // Created 10s ago (Cooldown is 60s)
+        lastToken.setCreatedAt(LocalDateTime.now().minusSeconds(10));
 
         when(userRepository.findByEmailIgnoreCase(mockUser.getEmail())).thenReturn(Optional.of(mockUser));
         when(verificationTokenRepository.findByUserId(mockUser.getId())).thenReturn(Optional.of(lastToken));
@@ -243,7 +249,7 @@ class UserServiceImplTest {
         request.setLastName("Doe");
         request.setUsername(Optional.of("johndoe"));
 
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
         when(userRepository.findUserByUsername("johndoe")).thenReturn(Optional.empty()); // Available
 
         ApiResponse<ProfileSetupResponse> response = userService.setupProfile(request);
@@ -252,8 +258,6 @@ class UserServiceImplTest {
         assertEquals("John", mockUser.getFirstName());
         assertEquals("johndoe", mockUser.getUsername());
         assertTrue(mockUser.isProfileSetupComplete());
-
-        closeSecurityContext();
     }
 
     @Test
@@ -265,15 +269,13 @@ class UserServiceImplTest {
         User otherUser = new User();
         otherUser.setId(UUID.randomUUID()); // Different ID
 
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
         when(userRepository.findUserByUsername("taken")).thenReturn(Optional.of(otherUser));
 
         ApiResponse<ProfileSetupResponse> response = userService.setupProfile(request);
 
         assertFalse(response.isSuccess());
         assertEquals(ErrorMessages.USERNAME_NOT_AVAILABLE, response.getMessage());
-
-        closeSecurityContext();
     }
 
     // ==========================================
@@ -288,7 +290,7 @@ class UserServiceImplTest {
         KycProviderResponse providerResponse = new KycProviderResponse();
         providerResponse.setSuccess(true);
 
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
         when(smileIdProvider.submitVerification(mockUser.getId(), kycRequest)).thenReturn(providerResponse);
 
         ApiResponse<KycProviderResponse> response = userService.startKycTier1(kycRequest);
@@ -299,23 +301,19 @@ class UserServiceImplTest {
         assertTrue(mockUser.isKycVerified());
         assertEquals(KycLevel.TIER_1, mockUser.getKycLevel());
         verify(walletService).createWalletForUser(mockUser);
-
-        closeSecurityContext();
     }
 
     @Test
     void startKycTier1_ShouldReturnSuccess_WhenAlreadyVerified() {
         setupSecurityContext();
         mockUser.setKycLevel(KycLevel.TIER_1);
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
 
         ApiResponse<KycProviderResponse> response = userService.startKycTier1(new IdVerificationRequest());
 
         assertTrue(response.isSuccess());
         assertEquals("Already Verified", response.getMessage());
         verify(smileIdProvider, never()).submitVerification(any(), any());
-
-        closeSecurityContext();
     }
 
     @Test
@@ -327,7 +325,7 @@ class UserServiceImplTest {
         providerResponse.setSuccess(false);
         providerResponse.setMessage("Face mismatch");
 
-        when(userRepository.findById(mockUser.getId())).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByEmailIgnoreCase("test@example.com")).thenReturn(Optional.of(mockUser));
         when(smileIdProvider.submitVerification(mockUser.getId(), kycRequest)).thenReturn(providerResponse);
 
         ApiResponse<KycProviderResponse> response = userService.startKycTier1(kycRequest);
@@ -335,8 +333,6 @@ class UserServiceImplTest {
         assertFalse(response.isSuccess());
         assertEquals("Face mismatch", response.getMessage());
         verify(walletService, never()).createWalletForUser(any());
-
-        closeSecurityContext();
     }
 
     // --- HELPER FOR STATIC MOCKING ---
@@ -348,12 +344,8 @@ class UserServiceImplTest {
         mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn(mockUser.getId().toString());
-    }
 
-    private void closeSecurityContext() {
-        if (mockedSecurityContextHolder != null) {
-            mockedSecurityContextHolder.close();
-        }
+        // ✅ FIX: Use Email, not ID
+        when(authentication.getName()).thenReturn("test@example.com");
     }
 }

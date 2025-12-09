@@ -142,14 +142,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<LogoutUserResponse> logout() {
         try {
-            var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
-            }
-
-            String email = auth.getName();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+            User user = getAuthenticatedUser();
 
             user.setLoggedIn(false);
             userRepository.save(user);
@@ -255,14 +248,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<ProfileSetupResponse> setupProfile(ProfileSetupRequest request) {
         try {
-            var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
-            }
-
-            String email = auth.getName();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+            User user = getAuthenticatedUser();
 
             user.setFirstName(request.getFirstName());
             user.setLastName(request.getLastName());
@@ -310,14 +296,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<KycProviderResponse> startKycTier1(IdVerificationRequest request) {
         try {
-            var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || !auth.isAuthenticated()) {
-                return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
-            }
-
-            String email = auth.getName();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
+            User user = getAuthenticatedUser();
 
             if (user.getKycLevel() == KycLevel.TIER_1 || user.getKycLevel() == KycLevel.TIER_2) {
                 KycProviderResponse resp = new KycProviderResponse();
@@ -351,5 +330,16 @@ public class UserServiceImpl implements UserService {
             log.error("KYC fatal error: ", ex);
             return ApiResponse.failure(ErrorMessages.OPERATION_FAILED);
         }
+    }
+
+    private User getAuthenticatedUser() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new TapprException(ErrorMessages.USER_NOT_AUTHENTICATED);
+        }
+
+        String email = auth.getName();
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new TapprException(ErrorMessages.USER_NOT_FOUND));
     }
 }

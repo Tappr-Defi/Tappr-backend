@@ -25,7 +25,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class WalletServiceImplTest {
+class
+WalletServiceImplTest {
 
     @Mock
     private WalletRepository walletRepository;
