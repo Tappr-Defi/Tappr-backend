@@ -76,8 +76,8 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Notification> notifications;
 
-    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Transaction> transactions;
+//    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private List<Transaction> transactions;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private LoyaltyWallet loyaltyWallet;
