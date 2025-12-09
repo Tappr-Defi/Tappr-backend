@@ -101,42 +101,42 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public JavaMailSender javaMailSender() {
-        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
-        mailSender.setUsername(mailSenderUsername);
-        mailSender.setPassword(mailSenderPassword);
-
-        Properties props = mailSender.getJavaMailProperties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
-
-        return mailSender;
-    }
-
 //    @Bean
 //    public JavaMailSender javaMailSender() {
 //        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 //        mailSender.setHost("smtp.gmail.com");
-//
-//        // CHANGE 1: Use Port 465 (SSL) instead of 587
-//        mailSender.setPort(465);
-//
+//        mailSender.setPort(587);
 //        mailSender.setUsername(mailSenderUsername);
 //        mailSender.setPassword(mailSenderPassword);
 //
 //        Properties props = mailSender.getJavaMailProperties();
 //        props.put("mail.transport.protocol", "smtp");
 //        props.put("mail.smtp.auth", "true");
-//
-//        props.put("mail.smtp.ssl.enable", "true");
-//        props.put("mail.smtp.starttls.enable", "false");
+//        props.put("mail.smtp.starttls.enable", "true");
 //        props.put("mail.debug", "true");
 //
 //        return mailSender;
 //    }
+
+    @Bean
+    public JavaMailSender javaMailSender() {
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost("smtp.gmail.com");
+
+        // CHANGE 1: Use Port 465 (SSL) instead of 587
+        mailSender.setPort(465);
+
+        mailSender.setUsername(mailSenderUsername);
+        mailSender.setPassword(mailSenderPassword);
+
+        Properties props = mailSender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+
+        props.put("mail.smtp.ssl.enable", "true");
+        props.put("mail.smtp.starttls.enable", "false");
+        props.put("mail.debug", "true");
+
+        return mailSender;
+    }
 }
