@@ -147,8 +147,8 @@ public class UserServiceImpl implements UserService {
                 return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
             }
 
-            UUID userId = UUID.fromString(auth.getName());
-            User user = userRepository.findById(userId)
+            String email = auth.getName();
+            User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
             user.setLoggedIn(false);
@@ -260,8 +260,8 @@ public class UserServiceImpl implements UserService {
                 return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
             }
 
-            UUID userId = UUID.fromString(auth.getName());
-            User user = userRepository.findById(userId)
+            String email = auth.getName();
+            User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
             user.setFirstName(request.getFirstName());
@@ -315,8 +315,8 @@ public class UserServiceImpl implements UserService {
                 return ApiResponse.failure(ErrorMessages.USER_NOT_AUTHENTICATED);
             }
 
-            UUID userId = UUID.fromString(auth.getName());
-            User user = userRepository.findById(userId)
+            String email = auth.getName();
+            User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
             if (user.getKycLevel() == KycLevel.TIER_1 || user.getKycLevel() == KycLevel.TIER_2) {

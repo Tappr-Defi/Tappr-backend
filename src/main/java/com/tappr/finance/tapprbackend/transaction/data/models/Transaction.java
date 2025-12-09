@@ -1,51 +1,57 @@
 package com.tappr.finance.tapprbackend.transaction.data.models;
 
-import com.tappr.finance.tapprbackend.reciepts.data.models.Receipt;
-import com.tappr.finance.tapprbackend.transaction.enums.CurrencyType;
+import com.tappr.finance.tapprbackend.Wallet.data.model.Wallet;
 import com.tappr.finance.tapprbackend.transaction.enums.TransactionStatus;
-import com.tappr.finance.tapprbackend.user.data.models.User;
+import com.tappr.finance.tapprbackend.transaction.enums.TransactionType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "transactions")
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "transaction_ref", nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String transactionRef;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id", nullable = false)
-    private User merchant;
+    @JoinColumn(name = "source_wallet_id")
+    private Wallet sourceWallet;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_wallet_id")
+    private Wallet destinationWallet;
+
+    @Column(nullable = false, precision = 30, scale = 9)
     private BigDecimal amount;
-    
-    @Column(nullable = false, length = 3)
-    private CurrencyType currency = CurrencyType.NGN;
+
+    @Column(nullable = false)
+    private String currencyCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    private TransactionType type;
+
+    @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 
-    @CreationTimestamp
-    @Column(name = "initiated_at", nullable = false)
-    private LocalDateTime initiatedAt;
-    
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
+    private String description;
 
-    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL)
-    private Receipt receipt;
+    @CreationTimestamp
+    private LocalDateTime initiatedAt;
+
+    @UpdateTimestamp
+    private LocalDateTime completedAt;
 }

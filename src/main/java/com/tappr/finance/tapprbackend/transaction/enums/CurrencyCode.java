@@ -1,6 +1,6 @@
 package com.tappr.finance.tapprbackend.transaction.enums;
 
-public enum CurrencyType {
+public enum CurrencyCode {
     NGN,
     DOLLAR,
     EURO,

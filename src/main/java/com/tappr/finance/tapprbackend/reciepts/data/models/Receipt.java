@@ -1,48 +1,42 @@
 package com.tappr.finance.tapprbackend.reciepts.data.models;
 
-import com.tappr.finance.tapprbackend.user.data.models.User;
-import jakarta.persistence.*;
 import com.tappr.finance.tapprbackend.transaction.data.models.Transaction;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "receipts")
 public class Receipt {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private UUID id;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "transaction_id", referencedColumnName = "id", nullable = true)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "sender_id", referencedColumnName = "id", nullable = true)
-    private User senderDetails;
+    @Column(nullable = false, unique = true)
+    private String receiptNumber; // e.g., RCP-20250320-8567
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "recipient_id", referencedColumnName = "id", nullable = true)
-    private User recipientDetails;
+    private String senderName;
+    private String recipientName;
+    private String senderAccountMasked; // e.g., **** 879
+    private String recipientAccountMasked; // e.g., **** 079
 
-    @Column(name = "blockchain_hash")
-    private String blockchainHash;
-
-    @Column(name = "merchant_receipt_url", nullable = false)
-    private String merchantReceiptDownloadUrl; // IPFS/Walrus link or CDN
-
-    @Column(name = "regular_receipt_url", nullable = false)
-    private String regularReceiptDownloadUrl; // IPFS/Walrus link or CDN
+    private String transactionFee; // "10.00 NGN"
+    private String loyaltyPointsEarned; // "50 Tappr"
 
     @CreationTimestamp
-    @Column(name = "issued_at", nullable = false)
-    private LocalDateTime issuedAt;
+    private LocalDateTime generatedAt;
 
-    private boolean isMerchant;
-
+    private String downloadUrl;
 }
