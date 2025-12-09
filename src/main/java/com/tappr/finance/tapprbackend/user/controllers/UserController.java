@@ -30,7 +30,7 @@ public class UserController {
     // 🔹 Logout
     @PostMapping("/logout")
     @Operation(summary = "Logout", description = "Invalidate session.")
-    public ResponseEntity<LogoutUserResponse> logout() {
-        return ResponseEntity.ok(userService.logout().getData());
+    public ResponseEntity<ApiResponse<LogoutUserResponse>> logout() { // Change return type
+        return ResponseEntity.ok(userService.logout());
     }
 }
